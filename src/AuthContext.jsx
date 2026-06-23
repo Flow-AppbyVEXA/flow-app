@@ -14,14 +14,30 @@ export function useAuth() {
   return useContext(AuthContext)
 }
 
-const INIT_DATA = {
-  business: { name: 'Mi Quiosco', sidebarColor: '#0f1923', accentColor: '#2563EB' },
-  products:  [],
-  providers: [],
-  sales:     [],
-  registers: [],
-  cashiers:  [],
-  nid: { product: 1, provider: 1, sale: 1, register: 1, cashier: 1 },
+function makeInitData(businessName) {
+  const now = new Date()
+  const trialEnds = new Date(now)
+  trialEnds.setDate(trialEnds.getDate() + 30)
+
+  return {
+    business: { name: businessName, sidebarColor: '#0f1923', accentColor: '#2563EB' },
+    products:  [],
+    providers: [],
+    sales:     [],
+    registers: [],
+    cashiers:  [],
+    nid: { product: 1, provider: 1, sale: 1, register: 1, cashier: 1 },
+    createdAt: now.toISOString(),
+    billing: {
+      status: 'trial',           // trial | pending | authorized | paused | cancelled
+      trialEndsAt: trialEnds.toISOString(),
+      subscriptionId: null,
+      amount: null,
+      nextPaymentDate: null,
+      firstChargeDate: null,
+      priceEscalated: false,
+    },
+  }
 }
 
 export function AuthProvider({ children }) {
@@ -41,7 +57,7 @@ export function AuthProvider({ children }) {
 
   const register = async (email, password, businessName) => {
     const cred = await createUserWithEmailAndPassword(auth, email, password)
-    const initData = { ...INIT_DATA, business: { ...INIT_DATA.business, name: businessName } }
+    const initData = makeInitData(businessName)
     await setDoc(doc(db, 'users', cred.user.uid, 'data', 'main'), initData)
     return cred
   }
@@ -53,7 +69,7 @@ export function AuthProvider({ children }) {
       <div style={{
         height: '100vh', display: 'flex', alignItems: 'center',
         justifyContent: 'center', background: '#0f1923',
-        fontFamily: "'DM Sans', system-ui, sans-serif"
+        fontFamily: "'Roboto', system-ui, sans-serif"
       }}>
         <div style={{ textAlign: 'center', color: 'white' }}>
           <div style={{ fontSize: 48, fontWeight: 900, letterSpacing: -2, marginBottom: 12 }}>Flow</div>
