@@ -82,6 +82,7 @@ function NavIcon({ id }) {
   if (id === "cajeros")      return <svg {...s} viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>;
   if (id === "etiquetas")    return <svg {...s} viewBox="0 0 24 24"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>;
   if (id === "ajustes")      return <svg {...s} viewBox="0 0 24 24"><line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/></svg>;
+  if (id === "admin")      return <svg {...s} viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>;
   return null;
 }
 
@@ -1620,6 +1621,167 @@ function LoadingScreen() {
   );
 }
 
+function AdminPanel({ state }) {
+  const { user } = useAuth();
+  const [clients, setClients]   = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [error, setError]       = useState("");
+  const [selected, setSelected] = useState(null);
+  const [sortBy, setSortBy]     = useState("createdAt");
+  const accent = state.business.accentColor;
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const token = await user.getIdToken(true);
+        const res = await fetch("/api/admin-stats", {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || "Error al cargar datos");
+        setClients(data.clients);
+      } catch (err) { setError(err.message); }
+      setLoading(false);
+    };
+    load();
+  }, [user]);
+
+  const STATUS = {
+    trial:          { label: "Prueba",          color: "blue"   },
+    authorized:     { label: "Activa",           color: "green"  },
+    pending:        { label: "Pendiente",        color: "yellow" },
+    paused:         { label: "Pausada",          color: "yellow" },
+    cancelled:      { label: "Cancelada",        color: "red"    },
+    trial_expired:  { label: "Prueba vencida",   color: "gray"   },
+  };
+
+  if (loading) return (
+    <div style={sx.page}>
+      <PH title="Panel de Admin" />
+      <div style={{ textAlign: "center", padding: "60px", color: "#9CA3AF", fontFamily: FONT }}>Cargando datos de clientes...</div>
+    </div>
+  );
+
+  if (error) return (
+    <div style={sx.page}>
+      <PH title="Panel de Admin" />
+      <Card style={{ padding: 20 }}>
+        <div style={{ color: "#DC2626", fontSize: 13, fontFamily: FONT }}>❌ {error}</div>
+        <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 8 }}>Verificá que las variables ADMIN_EMAIL y FIREBASE_SERVICE_ACCOUNT estén configuradas en Vercel.</div>
+      </Card>
+    </div>
+  );
+
+  const statusCounts = (clients || []).reduce((acc, c) => {
+    const s = c.billing?.status || "trial";
+    acc[s] = (acc[s] || 0) + 1;
+    return acc;
+  }, {});
+
+  const mrr = (clients || [])
+    .filter(c => c.billing?.status === "authorized")
+    .reduce((sum, c) => sum + (c.billing?.amount || 7500), 0);
+
+  const sorted = [...(clients || [])].sort((a, b) => {
+    if (sortBy === "revenue")  return (b.totalRevenue || 0) - (a.totalRevenue || 0);
+    if (sortBy === "sales")    return (b.salesCount || 0) - (a.salesCount || 0);
+    if (sortBy === "products") return (b.productsCount || 0) - (a.productsCount || 0);
+    return (b.createdAt || "").localeCompare(a.createdAt || "");
+  });
+
+  if (selected) {
+    const cl = selected;
+    const st = STATUS[cl.billing?.status] || STATUS.trial;
+    const trialEnd = cl.billing?.trialEndsAt ? new Date(cl.billing.trialEndsAt).toLocaleDateString("es-AR") : "—";
+    return (
+      <div style={sx.page}>
+        <GBtn accent={accent} onClick={() => setSelected(null)}>← Volver</GBtn>
+        <div style={{ marginTop: 22 }}>
+          <Card style={{ padding: "22px 26px", marginBottom: 14 }}>
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+              <div>
+                <div style={{ fontWeight: 800, fontSize: 18, color: "#0F172A", marginBottom: 3 }}>{cl.businessName}</div>
+                <div style={{ fontSize: 13, color: "#9CA3AF" }}>{cl.email}</div>
+              </div>
+              <Badge color={st.color}>{st.label}</Badge>
+            </div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {cl.billing?.amount && <Badge color="gray">{fmt(cl.billing.amount)}/mes</Badge>}
+              {cl.billing?.trialEndsAt && <Badge color="blue">Trial hasta {trialEnd}</Badge>}
+              {cl.billing?.nextPaymentDate && <Badge color="gray">Próximo cobro: {new Date(cl.billing.nextPaymentDate).toLocaleDateString("es-AR")}</Badge>}
+            </div>
+          </Card>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 11 }}>
+            <StatCard label="Productos cargados" value={cl.productsCount + ""} />
+            <StatCard label="Ventas registradas" value={cl.salesCount + ""} />
+            <StatCard label="Total facturado" value={fmt(cl.totalRevenue)} sub="en su quiosco" />
+            <StatCard label="Se registró" value={cl.createdAt ? cl.createdAt.slice(0, 10) : "—"} />
+            <StatCard label="Última venta" value={cl.lastSaleDate || "Sin ventas"} />
+            <StatCard label="Estado MP" value={cl.billing?.status || "—"} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={sx.page}>
+      <PH title="Panel de Admin" />
+
+      {/* KPIs */}
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 11, marginBottom: 22 }}>
+        <StatCard label="Total clientes"  value={(clients?.length || 0) + ""} />
+        <StatCard label="Activos"         value={(statusCounts.authorized || 0) + ""} sub="suscripción paga" />
+        <StatCard label="MRR"             value={fmt(mrr)} sub="mensual recurrente" />
+        <StatCard label="En prueba"       value={(statusCounts.trial || 0) + ""} />
+        <StatCard label="Cancelados"      value={(statusCounts.cancelled || 0) + ""} />
+        <StatCard label="Prueba vencida"  value={(statusCounts.trial_expired || 0) + ""} />
+      </div>
+
+      {/* Sort */}
+      <div style={{ display: "flex", gap: 7, marginBottom: 13, flexWrap: "wrap", alignItems: "center" }}>
+        <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF" }}>Ordenar:</span>
+        {[["createdAt","Registro"],["revenue","Facturación"],["sales","Ventas"],["products","Productos"]].map(([k, l]) => (
+          <button key={k} onClick={() => setSortBy(k)}
+            style={{ fontFamily: FONT, fontSize: 12, fontWeight: sortBy === k ? 600 : 400, padding: "4px 11px", borderRadius: 8, border: `1.5px solid ${sortBy === k ? accent : "#E5E7EB"}`, background: sortBy === k ? accent : "white", color: sortBy === k ? "white" : "#6B7280", cursor: "pointer" }}>
+            {l}
+          </button>
+        ))}
+      </div>
+
+      {/* Table */}
+      <Card>
+        {sorted.length === 0
+          ? <div style={{ padding: "40px", textAlign: "center", color: "#9CA3AF", fontFamily: FONT, fontSize: 13 }}>No hay clientes todavía</div>
+          : (
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr>{["Negocio / Email","Estado","Productos","Ventas","Facturado",""].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+              <tbody>
+                {sorted.map((cl, i) => {
+                  const st = STATUS[cl.billing?.status] || STATUS.trial;
+                  return (
+                    <tr key={cl.uid} className="tr-h" style={{ background: i % 2 === 0 ? "white" : "#FAFAFA" }}>
+                      <TD>
+                        <div style={{ fontWeight: 500, color: "#0F172A", fontSize: 13 }}>{cl.businessName}</div>
+                        <div style={{ fontSize: 11, color: "#9CA3AF" }}>{cl.email}</div>
+                      </TD>
+                      <TD><Badge color={st.color}>{st.label}</Badge></TD>
+                      <TD><span style={{ fontFamily: MONO }}>{cl.productsCount}</span></TD>
+                      <TD><span style={{ fontFamily: MONO }}>{cl.salesCount}</span></TD>
+                      <TD><span style={{ fontFamily: MONO }}>{fmt(cl.totalRevenue)}</span></TD>
+                      <TD><GBtn accent={accent} onClick={() => setSelected(cl)}>Ver →</GBtn></TD>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          )
+        }
+      </Card>
+    </div>
+  );
+}
+
 function getAccessStatus(state) {
   const billing = state.billing || {};
   if (billing.status === "authorized") return { allowed: true, status: "authorized" };
@@ -1661,6 +1823,7 @@ function Paywall({ accent, status, onSubscribe, loading, error }) {
 
 export default function App() {
   const { user, logout } = useAuth();
+  const isAdmin = user?.email === import.meta.env.VITE_ADMIN_EMAIL;
   const [state, setState]         = useState(null);
   const [active, setActive]       = useState("lector");
   const [appLoading, setAppLoading] = useState(true);
@@ -1732,7 +1895,8 @@ export default function App() {
   }
 
   const { sidebarColor, accentColor, name } = state.business;
-  const map = { lector: Lector, caja: Caja, productos: Productos, proveedores: Proveedores, vencimientos: Vencimientos, reportes: Reportes, cajeros: Cajeros, etiquetas: Etiquetas, ajustes: Ajustes };
+  const baseMap = { lector: Lector, caja: Caja, productos: Productos, proveedores: Proveedores, vencimientos: Vencimientos, reportes: Reportes, cajeros: Cajeros, etiquetas: Etiquetas, ajustes: Ajustes };
+  const map = isAdmin ? { ...baseMap, admin: AdminPanel } : baseMap;
   const Section = map[active];
 
   return (
@@ -1747,7 +1911,7 @@ export default function App() {
             <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 3 }}>Panel de gestión</div>
           </div>
           <nav style={{ flex: 1, paddingTop: 8, overflowY: "auto" }}>
-            {NAVS.map(n => {
+            {(isAdmin ? [...NAVS, { id: "admin", label: "Admin" }] : NAVS).map(n => {
               const on = active === n.id;
               return (
                 <button key={n.id} onClick={() => setActive(n.id)}
