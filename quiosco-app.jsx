@@ -15,6 +15,22 @@ const GS = () => (
     input[type=number] { -moz-appearance: textfield; }
     input::-webkit-outer-spin-button, input::-webkit-inner-spin-button { -webkit-appearance: none; }
     .tr-h:hover > td { background: #F8FAFC !important; }
+
+    /* ── RESPONSIVE ─────────────────────────────────── */
+    @media (max-width: 768px) {
+      .flow-sidebar { transform: translateX(-100%); transition: transform 0.25s ease; position: fixed !important; z-index: 50; height: 100vh; }
+      .flow-sidebar.open { transform: translateX(0); }
+      .flow-overlay { display: block !important; }
+      .flow-content { margin-left: 0 !important; }
+      .flow-hamburger { display: flex !important; }
+      .flow-page { padding: 20px 16px !important; }
+      .flow-stat-grid { grid-template-columns: 1fr 1fr !important; }
+      table { font-size: 12px !important; }
+      td, th { padding: 8px 10px !important; }
+    }
+    @media (max-width: 480px) {
+      .flow-stat-grid { grid-template-columns: 1fr !important; }
+    }
   `}</style>
 );
 
@@ -95,6 +111,7 @@ const FilterIcon = ({ size = 13 }) => (
 // ── SHARED TOKENS ─────────────────────────────────────────────────────────────
 const sx = {
   page:  { padding: "32px 36px", maxWidth: 900, margin: "0 auto", fontFamily: FONT },
+  mpage: { padding: "32px 36px", maxWidth: 900, margin: "0 auto", fontFamily: FONT },
   label: { fontSize: 11, fontWeight: 600, color: "#9CA3AF", letterSpacing: 0.5, textTransform: "uppercase" },
   title: { fontSize: 21, fontWeight: 800, color: "#0F172A", letterSpacing: -0.5 },
   card:  { background: "white", borderRadius: 16, border: "1px solid #EAEAEA", boxShadow: "0 1px 8px rgba(0,0,0,0.04)" },
@@ -1832,6 +1849,7 @@ function Paywall({ accent, status, onSubscribe, loading, error }) {
 export default function App() {
   const { user, logout } = useAuth();
   const isAdmin = user?.email === import.meta.env.VITE_ADMIN_EMAIL;
+  const [sideOpen, setSideOpen] = useState(false);
   const [state, setState]         = useState(null);
   const [active, setActive]       = useState("lector");
   const [appLoading, setAppLoading] = useState(true);
@@ -1913,7 +1931,10 @@ export default function App() {
       <div style={{ display: "flex", height: "100vh", fontFamily: FONT, overflow: "hidden" }}>
 
         {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
-        <div style={{ width: 210, minWidth: 210, backgroundColor: sidebarColor, display: "flex", flexDirection: "column", transition: "background 0.35s" }}>
+        {/* Overlay for mobile */}
+        {sideOpen && <div onClick={() => setSideOpen(false)} style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.45)", zIndex:40, display:"none" }} className="flow-overlay" />}
+
+        <div className={`flow-sidebar${sideOpen ? " open" : ""}`} style={{ width: 210, minWidth: 210, backgroundColor: sidebarColor, display: "flex", flexDirection: "column", transition: "background 0.35s" }}>
           <div style={{ padding: "22px 18px 18px", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
             <div style={{ color: "white", fontWeight: 900, fontSize: 20, letterSpacing: -0.5, fontFamily: HEEBO }}>{name}</div>
             <div style={{ color: "rgba(255,255,255,0.3)", fontSize: 11, marginTop: 3 }}>Panel de gestión</div>
@@ -1943,7 +1964,16 @@ export default function App() {
         </div>
 
         {/* ── CONTENT ─────────────────────────────────────────────────── */}
-        <div style={{ flex: 1, overflowY: "auto", backgroundColor: "white", position: "relative" }}>
+        <div className="flow-content" style={{ flex: 1, overflowY: "auto", backgroundColor: "white", position: "relative" }}>
+          {/* Mobile header */}
+          <div className="flow-hamburger" style={{ display:"none", alignItems:"center", gap:12, padding:"12px 16px", borderBottom:"1px solid #F0F0F0", background:"white", position:"sticky", top:0, zIndex:30 }}>
+            <button onClick={() => setSideOpen(o => !o)} style={{ background:"none", border:"none", cursor:"pointer", padding:6, display:"flex", flexDirection:"column", gap:4 }}>
+              <span style={{ display:"block", width:20, height:2, background: sidebarColor }} />
+              <span style={{ display:"block", width:20, height:2, background: sidebarColor }} />
+              <span style={{ display:"block", width:20, height:2, background: sidebarColor }} />
+            </button>
+            <span style={{ fontFamily: FONT, fontWeight:700, fontSize:15, color:"#0F172A" }}>{name}</span>
+          </div>
           {/* Watermark */}
           <div style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(calc(-50% + 105px), -50%)", fontSize: 92, fontWeight: 900, color: "rgba(0,0,0,0.022)", pointerEvents: "none", whiteSpace: "nowrap", userSelect: "none", zIndex: 0, letterSpacing: -3, fontFamily: FONT }}>
             {name}
