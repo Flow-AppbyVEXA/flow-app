@@ -1905,7 +1905,7 @@ function getAccessStatus(state) {
   return { allowed: false, status: "trial_expired" };
 }
 
-function Paywall({ accent, status, onSubscribe, loading, error }) {
+function Paywall({ accent, status, onSubscribe, loading, error, onLogout }) {
   const titles = {
     trial_expired: "Tu período de prueba terminó",
     paused: "Tu suscripción está pausada",
@@ -1950,6 +1950,11 @@ function Paywall({ accent, status, onSubscribe, loading, error }) {
         <div style={{ textAlign: "center", fontSize: 11, color: Z[400], marginTop: 14 }}>
           Luego de 6 meses, $15.000/mes · Cancelá cuando quieras
         </div>
+        <div style={{ textAlign: "center", marginTop: 20 }}>
+          <button onClick={onLogout} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12, color: Z[400], textDecoration: "underline", padding: 0 }}>
+            Cerrar sesión / Cambiar cuenta
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -1970,7 +1975,7 @@ function getAccessStatus(state) {
   return { allowed: false, status: "trial_expired" };
 }
 
-function Paywall({ accent, status, onSubscribe, loading, error }) {
+function Paywall({ accent, status, onSubscribe, loading, error, onLogout }) {
   const titles = {
     trial_expired: "Tu período de prueba terminó",
     paused: "Tu suscripción está pausada",
@@ -2066,8 +2071,8 @@ export default function App() {
   if (appLoading || !state) return <LoadingScreen />;
 
   const access = getAccessStatus(state);
-  if (!access.allowed) {
-    return <Paywall accent={state.business?.accentColor} status={access.status} onSubscribe={handleSubscribe} loading={subLoading} error={subError} />;
+  if (!access.allowed && !isAdmin) {
+    return <Paywall accent={state.business?.accentColor} status={access.status} onSubscribe={handleSubscribe} loading={subLoading} error={subError} onLogout={logout} />;
   }
 
   const { sidebarColor, accentColor, name } = state.business;
