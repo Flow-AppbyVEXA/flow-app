@@ -1492,14 +1492,14 @@ function Ajustes({ state, setState }) {
           <Card style={{ padding: 22 }}>
             <div style={{ fontWeight: 600, fontSize: 14, color: "#0F172A", marginBottom: 12 }}>Contacto</div>
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => window.open("mailto:vexaflowcore@gmail.com?subject=Soporte%20Flow", "_blank")}
-                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: "#F9FAFB", border: "none", borderRadius: 11, padding: "13px", fontFamily: FONT, fontWeight: 500, fontSize: 13, color: "#6B7280", cursor: "pointer" }}>
+              <a href="mailto:vexaflowcore@gmail.com?subject=Soporte%20Flow"
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: "#F9FAFB", border: "none", borderRadius: 11, padding: "13px", fontFamily: FONT, fontWeight: 500, fontSize: 13, color: "#6B7280", cursor: "pointer", textDecoration: "none" }}>
                 ✉️ Email
-              </button>
-              <button onClick={() => window.open("https://api.whatsapp.com/send?phone=543444635779&text=Hola!%20Necesito%20ayuda%20con%20Flow", "_blank")}
-                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", gap: 7, background: "#F0FDF4", border: "none", borderRadius: 11, padding: "13px", fontFamily: FONT, fontWeight: 500, fontSize: 13, color: "#15803D", cursor: "pointer" }}>
+              </a>
+              <a href="https://api.whatsapp.com/send?phone=543444635779&text=Hola!%20Necesito%20ayuda%20con%20Flow" target="_blank" rel="noreferrer"
+                style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", border: "none", gap: 7, background: "#F0FDF4", borderRadius: 11, padding: "13px", fontFamily: FONT, fontWeight: 500, fontSize: 13, color: "#15803D", cursor: "pointer", textDecoration: "none" }}>
                 📲 WhatsApp
-              </button>
+              </a>
             </div>
           </Card>
           <Card style={{ padding: 22 }}>
@@ -1511,7 +1511,10 @@ function Ajustes({ state, setState }) {
             <PBtn accent={accent} onClick={() => {
               if (!feedback.trim()) return;
               const msg = "💬 Reseña Flow\nNegocio: " + state.business.name + "\nUsuario: " + (user?.email || "") + "\n\n" + feedback;
-              window.open("https://api.whatsapp.com/send?phone=543444635779&text=" + encodeURIComponent(msg), "_blank");
+              const url = "https://api.whatsapp.com/send?phone=543444635779&text=" + encodeURIComponent(msg);
+              const a = document.createElement("a");
+              a.href = url; a.target = "_blank"; a.rel = "noreferrer";
+              document.body.appendChild(a); a.click(); document.body.removeChild(a);
               setSent(true); setFb(""); setTimeout(() => setSent(false), 3000);
             }} style={{ marginTop: 10 }}>
               {sent ? "✅ Enviado" : "Enviar"}
@@ -1848,7 +1851,8 @@ function Paywall({ accent, status, onSubscribe, loading, error }) {
 
 export default function App() {
   const { user, logout } = useAuth();
-  const isAdmin = user?.email === import.meta.env.VITE_ADMIN_EMAIL;
+  const ADMIN_EMAIL_CHECK = import.meta.env.VITE_ADMIN_EMAIL || "vexaflowcore@gmail.com";
+  const isAdmin = user?.email === ADMIN_EMAIL_CHECK;
   const [sideOpen, setSideOpen] = useState(false);
   const [state, setState]         = useState(null);
   const [active, setActive]       = useState("lector");
