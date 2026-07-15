@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useAuth } from './AuthContext.jsx'
 
-const FONT = "'Nunito', system-ui, sans-serif"
+const FONT = "'Inter', system-ui, sans-serif"
 
 const TCS = `TÉRMINOS Y CONDICIONES DE USO — FLOW
 Desarrollado por VEXA Software · Argentina
@@ -16,52 +16,71 @@ Al registrarte, sos responsable de mantener la confidencialidad de tu contraseñ
 El servicio incluye 30 días de prueba gratuita. Luego requiere una suscripción mensual abonada a través de Mercado Pago. Podés cancelar en cualquier momento desde Ajustes → Información de cuenta.
 
 4. PRIVACIDAD Y DATOS
-Tus datos comerciales (productos, ventas, caja) se almacenan de forma segura en Google Firebase. No compartimos tu información con terceros salvo Mercado Pago para el procesamiento de pagos. Los datos se usan únicamente para el funcionamiento del servicio y para la mejora de Flow.
+Tus datos comerciales se almacenan de forma segura en Google Firebase. No compartimos tu información con terceros salvo Mercado Pago para el procesamiento de pagos.
 
 5. PROPIEDAD INTELECTUAL
-Todo el software, diseño e interfaz de Flow es propiedad de VEXA Software. Queda prohibida su reproducción o distribución sin autorización.
+Todo el software, diseño e interfaz de Flow es propiedad de VEXA Software. Queda prohibida su reproducción sin autorización.
 
 6. LIMITACIÓN DE RESPONSABILIDAD
-Flow es una herramienta de gestión. VEXA Software no se responsabiliza por decisiones comerciales tomadas con base en los datos registrados en la plataforma.
+Flow es una herramienta de gestión. VEXA Software no se responsabiliza por decisiones comerciales tomadas con base en los datos registrados.
 
 7. JURISDICCIÓN
-Estos términos se rigen por las leyes de la República Argentina. Para cualquier disputa, las partes acuerdan someterse a la jurisdicción de los tribunales ordinarios de la Ciudad Autónoma de Buenos Aires.
+Estos términos se rigen por las leyes de la República Argentina.
 
 8. CONTACTO
 vexaflowcore@gmail.com | WhatsApp: +54 344 463 5779`
 
-function FInput({ type = 'text', placeholder, value, onChange }) {
-  const [f, setF] = useState(false)
+// ── Definidos FUERA de Login para evitar re-mount al escribir ─────────────────
+function FInput({ type, placeholder, value, onChange }) {
+  const [focused, setFocused] = useState(false)
   return (
-    <input type={type} placeholder={placeholder} value={value} onChange={onChange}
-      onFocus={() => setF(true)} onBlur={() => setF(false)}
-      style={{ fontFamily: FONT, width: '100%', padding: '12px 16px', border: `1.5px solid ${f ? '#2563EB' : '#E5E7EB'}`, borderRadius: 12, fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'border 0.15s', background: 'white', minHeight: 48 }} />
+    <input
+      type={type || 'text'}
+      placeholder={placeholder}
+      value={value}
+      onChange={onChange}
+      onFocus={() => setFocused(true)}
+      onBlur={() => setFocused(false)}
+      style={{
+        fontFamily: FONT, width: '100%', padding: '10px 14px',
+        border: `1px solid ${focused ? '#2563EB' : '#E4E4E7'}`,
+        boxShadow: focused ? '0 0 0 3px #EFF6FF' : 'none',
+        borderRadius: 8, fontSize: 14, outline: 'none',
+        boxSizing: 'border-box', transition: 'border 0.15s, box-shadow 0.15s',
+        background: 'white', color: '#09090B', minHeight: 44,
+      }}
+    />
   )
 }
 
-const Label = ({ children }) => (
-  <div style={{ fontSize: 11, fontWeight: 700, color: '#9CA3AF', letterSpacing: 0.5, textTransform: 'uppercase', marginBottom: 7 }}>{children}</div>
-)
-
 function TermsModal({ onClose }) {
   return (
-    <div onClick={onClose} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20 }}>
-      <div onClick={e => e.stopPropagation()} style={{ background: 'white', borderRadius: 18, maxWidth: 520, width: '100%', maxHeight: '80vh', display: 'flex', flexDirection: 'column', boxShadow: '0 24px 64px rgba(0,0,0,0.2)' }}>
-        <div style={{ padding: '20px 24px', borderBottom: '1px solid #F0F0F0', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span style={{ fontFamily: FONT, fontWeight: 700, fontSize: 15, color: '#0F172A' }}>Términos y Condiciones</span>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#9CA3AF' }}>✕</button>
+    <div onClick={onClose} style={{ position:'fixed', inset:0, background:'rgba(0,0,0,0.5)', zIndex:200, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+      <div onClick={e => e.stopPropagation()} style={{ background:'white', borderRadius:14, border:'1px solid #E4E4E7', maxWidth:520, width:'100%', maxHeight:'80vh', display:'flex', flexDirection:'column', boxShadow:'0 20px 48px rgba(9,9,11,0.12)' }}>
+        <div style={{ padding:'18px 22px', borderBottom:'1px solid #F4F4F5', display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+          <span style={{ fontFamily:FONT, fontWeight:600, fontSize:15, color:'#09090B' }}>Términos y Condiciones</span>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', fontSize:18, color:'#A1A1AA' }}>✕</button>
         </div>
-        <div style={{ flex: 1, overflowY: 'auto', padding: '20px 24px' }}>
-          <pre style={{ fontFamily: FONT, fontSize: 12, color: '#374151', lineHeight: 1.7, whiteSpace: 'pre-wrap', margin: 0 }}>{TCS}</pre>
+        <div style={{ flex:1, overflowY:'auto', padding:'18px 22px' }}>
+          <pre style={{ fontFamily:FONT, fontSize:12, color:'#52525B', lineHeight:1.7, whiteSpace:'pre-wrap', margin:0 }}>{TCS}</pre>
         </div>
-        <div style={{ padding: '16px 24px', borderTop: '1px solid #F0F0F0' }}>
-          <button onClick={onClose} style={{ width: '100%', background: '#2563EB', color: 'white', border: 'none', borderRadius: 10, padding: 12, fontFamily: FONT, fontWeight: 700, fontSize: 13, cursor: 'pointer' }}>Entendido</button>
+        <div style={{ padding:'14px 22px', borderTop:'1px solid #F4F4F5' }}>
+          <button onClick={onClose} style={{ width:'100%', background:'#2563EB', color:'white', border:'none', borderRadius:8, padding:'11px', fontFamily:FONT, fontWeight:500, fontSize:13, cursor:'pointer' }}>Entendido</button>
         </div>
       </div>
     </div>
   )
 }
 
+const FieldLabel = ({ children }) => (
+  <div style={{ fontSize:10, fontWeight:600, color:'#A1A1AA', letterSpacing:0.6, textTransform:'uppercase', marginBottom:6, fontFamily:FONT }}>{children}</div>
+)
+
+const ErrBox = ({ msg }) => msg ? (
+  <div style={{ background:'#FEF2F2', border:'1px solid #FECACA', borderRadius:8, padding:'10px 14px', marginBottom:14, fontSize:13, color:'#B91C1C', fontWeight:500, fontFamily:FONT }}>{msg}</div>
+) : null
+
+// ── LOGIN COMPONENT ──────────────────────────────────────────────────────────
 export default function Login() {
   const [mode, setMode]             = useState('login')
   const [email, setEmail]           = useState('')
@@ -71,8 +90,6 @@ export default function Login() {
   const [showTerms, setShowTerms]   = useState(false)
   const [error, setError]           = useState('')
   const [loading, setLoading]       = useState(false)
-
-  // Reset password
   const [resetMode, setResetMode]   = useState(false)
   const [resetEmail, setResetEmail] = useState('')
   const [resetSent, setResetSent]   = useState(false)
@@ -121,138 +138,153 @@ export default function Login() {
     setError(''); setEmail(''); setPassword(''); setBusiness(''); setAccept(false); setResetMode(false)
   }
 
-  const Err = () => error ? (
-    <div style={{ background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: 10, padding: '11px 14px', marginBottom: 16, fontSize: 13, color: '#DC2626', fontWeight: 600 }}>{error}</div>
-  ) : null
+  const goToReset = () => { setResetMode(true); setError(''); if (email) setResetEmail(email) }
+  const backFromReset = () => { setResetMode(false); setResetSent(false); setError(''); setResetEmail('') }
 
-  // ── RESET PASSWORD SCREEN ──────────────────────────────────────────────────
-  const ResetScreen = () => (
-    <div style={{ width: '100%', maxWidth: 360 }}>
-      <button onClick={() => { setResetMode(false); setResetSent(false); setError(''); setResetEmail(''); }}
-        style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563EB', fontFamily: FONT, fontSize: 13, fontWeight: 700, padding: 0, marginBottom: 28 }}>
-        ← Volver al inicio de sesión
-      </button>
-      <div style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', letterSpacing: -0.5, marginBottom: 8 }}>Recuperar contraseña</div>
-      {!resetSent ? (
-        <>
-          <div style={{ fontSize: 13, color: '#9CA3AF', marginBottom: 28 }}>Te enviamos un link para restablecer tu contraseña.</div>
-          <Label>Email de tu cuenta</Label>
-          <FInput type="email" placeholder="tu@email.com" value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
-          <Err />
-          <button onClick={handleReset} disabled={resetLoading}
-            style={{ width: '100%', padding: 14, background: resetLoading ? '#93C5FD' : '#2563EB', color: 'white', border: 'none', borderRadius: 12, fontFamily: FONT, fontWeight: 700, fontSize: 14, cursor: 'pointer', marginTop: 20 }}>
-            {resetLoading ? 'Enviando...' : 'Enviar link de recuperación'}
-          </button>
-        </>
-      ) : (
-        <div style={{ background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 14, padding: '24px 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: 32, marginBottom: 12 }}>📧</div>
-          <div style={{ fontWeight: 700, fontSize: 15, color: '#0F172A', marginBottom: 8 }}>¡Revisá tu email!</div>
-          <div style={{ fontSize: 13, color: '#6B7280', lineHeight: 1.6 }}>Te enviamos un link para restablecer tu contraseña a <strong>{resetEmail}</strong>. Revisá también la carpeta de spam.</div>
-        </div>
-      )}
-    </div>
-  )
-
-  // ── MAIN FORM ──────────────────────────────────────────────────────────────
   return (
     <>
       {showTerms && <TermsModal onClose={() => setShowTerms(false)} />}
-      <style>{`@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap'); * { box-sizing: border-box; } @media (max-width: 640px) { .login-left { display: none !important; } .login-right { width: 100% !important; padding: 40px 28px !important; } }`}</style>
-      <div style={{ minHeight: '100vh', display: 'flex', fontFamily: FONT }}>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+        * { box-sizing: border-box; }
+        @media (max-width: 640px) { .login-left { display: none !important; } .login-right { width: 100% !important; padding: 40px 28px !important; } }
+      `}</style>
 
-        {/* LEFT PANEL */}
-        <div className="login-left" style={{ flex: 1, background: '#0f1923', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px 48px' }}>
-          <div style={{ maxWidth: 340, width: '100%' }}>
-            <div style={{ fontSize: 56, fontWeight: 900, color: 'white', letterSpacing: -2, marginBottom: 6, lineHeight: 1 }}>Flow</div>
-            <div style={{ fontSize: 12, fontWeight: 700, color: 'rgba(255,255,255,0.35)', letterSpacing: 2.5, textTransform: 'uppercase', marginBottom: 52 }}>Gestión Comercial Inteligente</div>
-            {[['📖','Lector de ventas','Vendé rápido por código o nombre'],['📦','Control de stock','Inventario en tiempo real con alertas'],['📊','Reportes inteligentes','Métricas de ventas, rotación y rentabilidad'],['⏰','Control de vencimientos','Alertas automáticas antes de que venzan'],].map(([icon, title, desc]) => (
-              <div key={title} style={{ display: 'flex', gap: 14, marginBottom: 26 }}>
-                <div style={{ fontSize: 18, marginTop: 2 }}>{icon}</div>
+      <div style={{ minHeight:'100vh', display:'flex', fontFamily:FONT, background:'#FAFAFA' }}>
+
+        {/* LEFT */}
+        <div className="login-left" style={{ flex:1, background:'#09090B', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:'60px 48px' }}>
+          <div style={{ maxWidth:320, width:'100%' }}>
+            <div style={{ fontSize:26, fontWeight:700, color:'white', letterSpacing:-0.5, marginBottom:6 }}>Flow</div>
+            <div style={{ fontSize:11, fontWeight:600, color:'#52525B', letterSpacing:2, textTransform:'uppercase', marginBottom:48 }}>Gestión Comercial Inteligente</div>
+            {[
+              ['Lector de ventas',      'Vendé rápido con código de barras o nombre'],
+              ['Control de stock',      'Inventario en tiempo real con alertas automáticas'],
+              ['Reportes inteligentes', 'Métricas de ventas, rotación y rentabilidad'],
+              ['Control de vencimientos','Alertas por color antes de que venzan los productos'],
+            ].map(([title, desc]) => (
+              <div key={title} style={{ display:'flex', gap:12, marginBottom:24 }}>
+                <div style={{ width:4, height:4, borderRadius:'50%', background:'#3F3F46', marginTop:6, flexShrink:0 }} />
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 13, color: 'white', marginBottom: 3 }}>{title}</div>
-                  <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.38)', lineHeight: 1.5 }}>{desc}</div>
+                  <div style={{ fontWeight:600, fontSize:13, color:'white', marginBottom:3 }}>{title}</div>
+                  <div style={{ fontSize:12, color:'#52525B', lineHeight:1.5 }}>{desc}</div>
                 </div>
               </div>
             ))}
-            <div style={{ marginTop: 52, fontSize: 11, color: 'rgba(255,255,255,0.2)' }}>© Powered by VEXA 2026</div>
+            <div style={{ marginTop:48, fontSize:10, color:'#27272A' }}>© Powered by VEXA 2026</div>
           </div>
         </div>
 
-        {/* RIGHT PANEL */}
-        <div className="login-right" style={{ width: 480, background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '60px 48px', boxShadow: '-4px 0 32px rgba(0,0,0,0.06)' }}>
-          {resetMode ? <ResetScreen /> : (
-            <div style={{ width: '100%', maxWidth: 360 }}>
-              <div style={{ marginBottom: 32 }}>
-                <div style={{ fontSize: 24, fontWeight: 800, color: '#0F172A', letterSpacing: -0.5, marginBottom: 6 }}>
-                  {mode === 'login' ? 'Bienvenido de nuevo' : 'Crear cuenta'}
-                </div>
-                <div style={{ fontSize: 13, color: '#9CA3AF' }}>
-                  {mode === 'login' ? 'Ingresá con tu cuenta de Flow' : '30 días gratis · Sin tarjeta requerida'}
-                </div>
+        {/* RIGHT */}
+        <div className="login-right" style={{ width:460, background:'white', display:'flex', alignItems:'center', justifyContent:'center', padding:'56px 44px', borderLeft:'1px solid #E4E4E7' }}>
+          <div style={{ width:'100%', maxWidth:340 }}>
+
+            {/* ── RESET MODE ── */}
+            {resetMode ? (
+              <div>
+                <button onClick={backFromReset} style={{ background:'none', border:'none', cursor:'pointer', color:'#2563EB', fontFamily:FONT, fontSize:12, fontWeight:500, padding:0, marginBottom:28 }}>
+                  ← Volver al inicio de sesión
+                </button>
+                <div style={{ fontSize:20, fontWeight:700, color:'#09090B', letterSpacing:-0.4, marginBottom:6 }}>Recuperar contraseña</div>
+                {!resetSent ? (
+                  <>
+                    <div style={{ fontSize:13, color:'#71717A', marginBottom:24 }}>Te enviamos un link para restablecer tu contraseña.</div>
+                    <div style={{ marginBottom:16 }}>
+                      <FieldLabel>Email de tu cuenta</FieldLabel>
+                      <FInput type="email" placeholder="tu@email.com" value={resetEmail} onChange={e => setResetEmail(e.target.value)} />
+                    </div>
+                    <ErrBox msg={error} />
+                    <button onClick={handleReset} disabled={resetLoading}
+                      style={{ width:'100%', padding:'11px', background: resetLoading ? '#93C5FD' : '#2563EB', color:'white', border:'none', borderRadius:8, fontFamily:FONT, fontWeight:500, fontSize:13, cursor:'pointer', marginTop:4 }}>
+                      {resetLoading ? 'Enviando...' : 'Enviar link de recuperación'}
+                    </button>
+                  </>
+                ) : (
+                  <div style={{ background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:12, padding:'22px 18px', textAlign:'center' }}>
+                    <div style={{ fontSize:28, marginBottom:10 }}>📧</div>
+                    <div style={{ fontWeight:600, fontSize:14, color:'#09090B', marginBottom:8 }}>¡Revisá tu email!</div>
+                    <div style={{ fontSize:12, color:'#52525B', lineHeight:1.6 }}>
+                      Enviamos el link a <strong>{resetEmail}</strong>.<br/>Revisá también la carpeta de spam.
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {mode === 'register' && (
-                <div style={{ marginBottom: 14 }}>
-                  <Label>Nombre del negocio</Label>
-                  <FInput placeholder="Ej: Kiosco San Martín" value={businessName} onChange={e => setBusiness(e.target.value)} />
+            ) : (
+              /* ── LOGIN / REGISTER MODE ── */
+              <div>
+                <div style={{ marginBottom:28 }}>
+                  <div style={{ fontSize:20, fontWeight:700, color:'#09090B', letterSpacing:-0.4, marginBottom:6 }}>
+                    {mode === 'login' ? 'Bienvenido de nuevo' : 'Crear cuenta'}
+                  </div>
+                  <div style={{ fontSize:13, color:'#71717A' }}>
+                    {mode === 'login' ? 'Ingresá con tu cuenta de Flow' : '30 días gratis · Sin tarjeta requerida'}
+                  </div>
                 </div>
-              )}
-              <div style={{ marginBottom: 14 }}>
-                <Label>Email</Label>
-                <FInput type="email" placeholder="tu@email.com" value={email} onChange={e => setEmail(e.target.value)} />
-              </div>
-              <div style={{ marginBottom: mode === 'register' ? 14 : 6 }}>
-                <Label>Contraseña</Label>
-                <FInput type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
-                {mode === 'register' && <div style={{ fontSize: 11, color: '#9CA3AF', marginTop: 5 }}>Mínimo 6 caracteres</div>}
-              </div>
 
-              {mode === 'login' && (
-                <div style={{ textAlign: 'right', marginBottom: 20 }}>
-                  <button onClick={() => { setResetMode(true); setError(''); setResetEmail(email); }}
-                    style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563EB', fontFamily: FONT, fontSize: 12, fontWeight: 600 }}>
-                    ¿Olvidaste tu contraseña?
+                {mode === 'register' && (
+                  <div style={{ marginBottom:14 }}>
+                    <FieldLabel>Nombre del negocio</FieldLabel>
+                    <FInput placeholder="Ej: Kiosco San Martín" value={businessName} onChange={e => setBusiness(e.target.value)} />
+                  </div>
+                )}
+
+                <div style={{ marginBottom:14 }}>
+                  <FieldLabel>Email</FieldLabel>
+                  <FInput type="email" placeholder="tu@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+                </div>
+
+                <div style={{ marginBottom: mode === 'register' ? 14 : 8 }}>
+                  <FieldLabel>Contraseña</FieldLabel>
+                  <FInput type="password" placeholder="••••••••" value={password} onChange={e => setPassword(e.target.value)} />
+                  {mode === 'register' && <div style={{ fontSize:11, color:'#A1A1AA', marginTop:5, fontFamily:FONT }}>Mínimo 6 caracteres</div>}
+                </div>
+
+                {mode === 'login' && (
+                  <div style={{ textAlign:'right', marginBottom:18 }}>
+                    <button onClick={goToReset} style={{ background:'none', border:'none', cursor:'pointer', color:'#2563EB', fontFamily:FONT, fontSize:12, fontWeight:500, padding:0 }}>
+                      ¿Olvidaste tu contraseña?
+                    </button>
+                  </div>
+                )}
+
+                {mode === 'register' && (
+                  <label style={{ display:'flex', alignItems:'flex-start', gap:10, marginBottom:18, cursor:'pointer' }}>
+                    <input type="checkbox" checked={acceptTerms} onChange={e => setAccept(e.target.checked)} style={{ marginTop:3, width:15, height:15, cursor:'pointer', flexShrink:0 }} />
+                    <span style={{ fontSize:12, color:'#71717A', lineHeight:1.5, fontFamily:FONT }}>
+                      Acepto los{' '}
+                      <button onClick={e => { e.preventDefault(); setShowTerms(true) }}
+                        style={{ background:'none', border:'none', cursor:'pointer', color:'#2563EB', fontWeight:600, fontFamily:FONT, fontSize:12, padding:0 }}>
+                        Términos y Condiciones
+                      </button>
+                      {' '}y la Política de Privacidad.
+                    </span>
+                  </label>
+                )}
+
+                <ErrBox msg={error} />
+
+                <button onClick={handleSubmit} disabled={loading}
+                  style={{ width:'100%', padding:'11px', background: loading ? '#93C5FD' : '#2563EB', color:'white', border:'none', borderRadius:8, fontFamily:FONT, fontWeight:500, fontSize:13, cursor: loading ? 'not-allowed' : 'pointer', marginBottom:16 }}>
+                  {loading ? 'Cargando...' : mode === 'login' ? 'Ingresar' : 'Crear cuenta gratis'}
+                </button>
+
+                <div style={{ textAlign:'center', fontSize:13, color:'#71717A', fontFamily:FONT }}>
+                  {mode === 'login' ? '¿No tenés cuenta?' : '¿Ya tenés cuenta?'}{' '}
+                  <button onClick={switchMode} style={{ background:'none', border:'none', cursor:'pointer', color:'#2563EB', fontWeight:600, fontFamily:FONT, fontSize:13, padding:0 }}>
+                    {mode === 'login' ? 'Registrarte' : 'Iniciá sesión'}
                   </button>
                 </div>
-              )}
 
-              {mode === 'register' && (
-                <label style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20, cursor: 'pointer' }}>
-                  <input type="checkbox" checked={acceptTerms} onChange={e => setAccept(e.target.checked)}
-                    style={{ marginTop: 3, width: 16, height: 16, cursor: 'pointer', flexShrink: 0 }} />
-                  <span style={{ fontSize: 12, color: '#6B7280', lineHeight: 1.5 }}>
-                    Acepto los{' '}
-                    <button onClick={e => { e.preventDefault(); setShowTerms(true); }}
-                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563EB', fontWeight: 700, fontFamily: FONT, fontSize: 12, padding: 0 }}>
-                      Términos y Condiciones
-                    </button>{' '}y la Política de Privacidad de Flow.
-                  </span>
-                </label>
-              )}
-
-              <Err />
-
-              <button onClick={handleSubmit} disabled={loading}
-                style={{ width: '100%', padding: 14, background: loading ? '#93C5FD' : '#2563EB', color: 'white', border: 'none', borderRadius: 12, fontFamily: FONT, fontWeight: 700, fontSize: 14, cursor: loading ? 'not-allowed' : 'pointer', marginBottom: 18, letterSpacing: -0.2 }}>
-                {loading ? 'Cargando...' : mode === 'login' ? 'Ingresar' : 'Crear cuenta gratis'}
-              </button>
-
-              <div style={{ textAlign: 'center', fontSize: 13, color: '#9CA3AF' }}>
-                {mode === 'login' ? '¿No tenés cuenta?' : '¿Ya tenés cuenta?'}{' '}
-                <button onClick={switchMode} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#2563EB', fontWeight: 700, fontFamily: FONT, fontSize: 13, padding: 0 }}>
-                  {mode === 'login' ? 'Registrarte' : 'Iniciá sesión'}
-                </button>
+                {mode === 'register' && (
+                  <div style={{ marginTop:22, padding:'14px 16px', background:'#F0FDF4', border:'1px solid #BBF7D0', borderRadius:10, fontSize:12, color:'#15803D', lineHeight:1.7, fontFamily:FONT }}>
+                    ✅ <strong>30 días gratis</strong> sin tarjeta.<br/>
+                    Luego, precio especial los primeros 6 meses.
+                  </div>
+                )}
               </div>
-
-              {mode === 'register' && (
-                <div style={{ marginTop: 24, padding: '14px 16px', background: '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: 12, fontSize: 12, color: '#15803D', lineHeight: 1.7 }}>
-                  ✅ <strong>30 días gratis</strong> sin tarjeta.<br />
-                  Luego, precio especial los primeros 6 meses.
-                </div>
-              )}
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     </>
