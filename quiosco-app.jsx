@@ -29,14 +29,18 @@ const GS = () => (
       .flow-sidebar { transform: translateX(-100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); position: fixed !important; z-index: 50; height: 100vh; }
       .flow-sidebar.open { transform: translateX(0); box-shadow: 24px 0 48px rgba(0,0,0,0.25); }
       .flow-overlay { display: block !important; }
-      .flow-content { margin-left: 0 !important; }
+      .flow-content { margin-left: 0 !important; width: 100% !important; }
       .flow-hamburger { display: flex !important; }
-      .flow-page { padding: 20px 16px !important; }
-      table { font-size: 12px !important; }
-      td, th { padding: 8px 10px !important; }
+      .flow-page { padding: 16px 14px !important; max-width: 100% !important; }
+      table { font-size: 12px !important; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      td, th { padding: 8px 10px !important; white-space: nowrap; }
+      .flow-grid-2 { grid-template-columns: 1fr !important; }
+      .flow-grid-3 { grid-template-columns: 1fr 1fr !important; }
+      input, select, textarea { font-size: 16px !important; }
     }
     @media (max-width: 480px) {
-      .flow-stat-grid { grid-template-columns: 1fr !important; }
+      .flow-page { padding: 12px 12px !important; }
+      .flow-grid-2, .flow-grid-3 { grid-template-columns: 1fr !important; }
     }
   `}</style>
 );
@@ -128,7 +132,7 @@ const FilterIcon = ({ size = 12 }) => (
 
 // ── DESIGN SYSTEM ─────────────────────────────────────────────────────────────
 const sx = {
-  page:  { padding: "32px 36px", maxWidth: 860, margin: "0 auto", fontFamily: FONT },
+  page:  { padding: "32px 36px", maxWidth: 860, margin: "0 auto", fontFamily: FONT, boxSizing: "border-box", width: "100%" },
   label: { fontSize: 10, fontWeight: 600, color: Z[400], letterSpacing: 0.6, textTransform: "uppercase", fontFamily: FONT },
   title: { fontSize: 20, fontWeight: 700, color: Z[950], letterSpacing: -0.4, fontFamily: FONT },
 };
@@ -2044,7 +2048,7 @@ export default function App() {
   return (
     <>
       <GS />
-      <div style={{ display: "flex", height: "100vh", fontFamily: FONT, overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: FONT, overflow: "hidden", width: "100%", maxWidth: "100vw" }}>
 
         {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
         {/* Overlay for mobile */}
@@ -2083,7 +2087,7 @@ export default function App() {
         </div>
 
         {/* ── CONTENT ─────────────────────────────────────────────────── */}
-        <div className="flow-content" style={{ flex: 1, overflowY: "auto", backgroundColor: Z[50], position: "relative" }}>
+        <div className="flow-content" style={{ flex: 1, overflowY: "auto", overflowX: "hidden", backgroundColor: Z[50], position: "relative", minWidth: 0 }}>
           {/* Mobile header */}
           <div className="flow-hamburger" style={{ display:"none", alignItems:"center", gap:12, padding:"11px 16px", borderBottom:`1px solid ${Z[200]}`, background:"white", position:"sticky", top:0, zIndex:30 }}>
             <button onClick={() => setSideOpen(o => !o)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex", flexDirection:"column", gap:4 }}>
