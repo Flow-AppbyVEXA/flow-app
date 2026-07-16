@@ -1961,6 +1961,45 @@ function Paywall({ accent, status, onSubscribe, loading, error, onLogout }) {
 }
 
 
+function getAccessStatus(state) {
+  const billing = state.billing || {};
+  if (billing.status === "authorized") return { allowed: true, status: "authorized" };
+  if (billing.status === "paused")     return { allowed: false, status: "paused" };
+  if (billing.status === "cancelled")  return { allowed: false, status: "cancelled" };
+
+  const trialEnd = billing.trialEndsAt ? new Date(billing.trialEndsAt) : null;
+  if (trialEnd && new Date() < trialEnd) {
+    const daysLeft = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
+    return { allowed: true, status: "trial", daysLeft };
+  }
+  return { allowed: false, status: "trial_expired" };
+}
+
+function Paywall({ accent, status, onSubscribe, loading, error, onLogout }) {
+  const titles = {
+    trial_expired: "Tu período de prueba terminó",
+    paused: "Tu suscripción está pausada",
+    cancelled: "Tu suscripción fue cancelada",
+  };
+  return (
+    <div style={{ minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", background: "#0f1923", fontFamily: FONT, padding: 24 }}>
+      <div style={{ maxWidth: 380, width: "100%", textAlign: "center" }}>
+        <div style={{ fontSize: 40, fontWeight: 900, color: "white", letterSpacing: -2, marginBottom: 8 }}>Flow</div>
+        <div style={{ fontSize: 14, color: "rgba(255,255,255,0.55)", marginBottom: 32 }}>{titles[status] || "Activá tu suscripción para continuar"}</div>
+        <div style={{ background: "white", borderRadius: 18, padding: 28 }}>
+          <div style={{ fontSize: 12, color: "#9CA3AF", marginBottom: 6 }}>Suscripción mensual</div>
+          <div style={{ fontFamily: MONO, fontSize: 34, fontWeight: 800, color: "#0F172A", marginBottom: 4, letterSpacing: -1 }}>$7.500</div>
+          <div style={{ fontSize: 11, color: "#10B981", fontWeight: 600, marginBottom: 22 }}>Precio promocional primeros 6 meses</div>
+          <PBtn accent={accent || "#2563EB"} onClick={onSubscribe} style={{ width: "100%", padding: 14, fontSize: 14 }}>
+            {loading ? "Generando link de pago..." : "Suscribirme ahora"}
+          </PBtn>
+          {error && <div style={{ marginTop: 14, fontSize: 12, color: "#DC2626" }}>{error}</div>}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const { user, logout } = useAuth();
   const ADMIN_EMAIL_CHECK = import.meta.env.VITE_ADMIN_EMAIL || "vexaflowcore@gmail.com";
