@@ -29,14 +29,18 @@ const GS = () => (
       .flow-sidebar { transform: translateX(-100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); position: fixed !important; z-index: 50; height: 100vh; }
       .flow-sidebar.open { transform: translateX(0); box-shadow: 24px 0 48px rgba(0,0,0,0.25); }
       .flow-overlay { display: block !important; }
-      .flow-content { margin-left: 0 !important; }
+      .flow-content { margin-left: 0 !important; width: 100% !important; }
       .flow-hamburger { display: flex !important; }
-      .flow-page { padding: 20px 16px !important; }
-      table { font-size: 12px !important; }
-      td, th { padding: 8px 10px !important; }
+      .flow-page { padding: 16px 14px !important; max-width: 100% !important; }
+      table { font-size: 12px !important; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      td, th { padding: 8px 10px !important; white-space: nowrap; }
+      .flow-grid-2 { grid-template-columns: 1fr !important; }
+      .flow-grid-3 { grid-template-columns: 1fr 1fr !important; }
+      input, select, textarea { font-size: 16px !important; }
     }
     @media (max-width: 480px) {
-      .flow-stat-grid { grid-template-columns: 1fr !important; }
+      .flow-page { padding: 12px 12px !important; }
+      .flow-grid-2, .flow-grid-3 { grid-template-columns: 1fr !important; }
     }
   `}</style>
 );
@@ -66,7 +70,7 @@ const LOGO_B64 = "iVBORw0KGgoAAAANSUhEUgAAALQAAACfCAYAAABQpvPHAABXMUlEQVR42u29d5
 
 // ── INITIAL STATE ─────────────────────────────────────────────────────────────
 const INIT = {
-  business: { name: "Mi Quiosco", sidebarColor: "#0f1923", accentColor: "#2563EB" },
+  business: { name: "", sidebarColor: "#0f1923", accentColor: "#2563EB" },
   products: [
     { id: 1, name: "Coca Cola 500ml",    barcode: "7790001234", cost: 450, price: 750, stock: 24, providerId: 1, expDate: rel(5)  },
     { id: 2, name: "Alfajor Havanna",    barcode: "7790005678", cost: 320, price: 550, stock: 12, providerId: 2, expDate: rel(18) },
@@ -128,7 +132,7 @@ const FilterIcon = ({ size = 12 }) => (
 
 // ── DESIGN SYSTEM ─────────────────────────────────────────────────────────────
 const sx = {
-  page:  { padding: "32px 36px", maxWidth: 860, margin: "0 auto", fontFamily: FONT },
+  page:  { padding: "32px 36px", maxWidth: 860, margin: "0 auto", fontFamily: FONT, boxSizing: "border-box", width: "100%" },
   label: { fontSize: 10, fontWeight: 600, color: Z[400], letterSpacing: 0.6, textTransform: "uppercase", fontFamily: FONT },
   title: { fontSize: 20, fontWeight: 700, color: Z[950], letterSpacing: -0.4, fontFamily: FONT },
 };
@@ -1629,24 +1633,12 @@ function Ajustes({ state, setState }) {
           </Card>
 
           <Card style={{ padding: 22 }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: "#0F172A", marginBottom: 16 }}>Imagen y Nombre</div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: "#0F172A", marginBottom: 16 }}>Nombre del negocio</div>
             <div style={{ marginBottom: 14 }}>
               <div style={{ ...sx.label, marginBottom: 7 }}>Nombre del negocio</div>
-              <TInput value={state.business.name} onChange={e => upd("name", e.target.value)} />
+              <TInput value={state.business.name} onChange={e => upd("name", e.target.value)} placeholder="Nombre de tu negocio" />
             </div>
-            <div>
-              <div style={{ ...sx.label, marginBottom: 7 }}>Logo</div>
-              {state.business.logo && (
-                <img src={state.business.logo} alt="Logo" style={{ maxHeight: 60, marginBottom: 10, borderRadius: 8, display: "block" }} />
-              )}
-              <input ref={logoRef} type="file" accept="image/*" onChange={handleLogo} style={{ display: "none" }} />
-              <button onClick={() => logoRef.current?.click()}
-                style={{ width: "100%", border: "1.5px dashed #D1D5DB", borderRadius: 11, padding: "18px", textAlign: "center", color: "#9CA3AF", fontSize: 13, cursor: "pointer", background: "transparent", fontFamily: FONT, transition: "all 0.15s" }}
-                onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.background = "#EFF6FF"; e.currentTarget.style.color = accent; }}
-                onMouseLeave={e => { e.currentTarget.style.borderColor = "#D1D5DB"; e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#9CA3AF"; }}>
-                📸 {state.business.logo ? "Cambiar logo" : "Cargar logo"}
-              </button>
-            </div>
+
           </Card>
 
           <Card style={{ padding: 22 }}>
@@ -1985,7 +1977,7 @@ export default function App() {
         const trialEnds = new Date(now);
         trialEnds.setDate(trialEnds.getDate() + 30);
         const emptyData = {
-          business:  { name: "Mi Quiosco", sidebarColor: "#0f1923", accentColor: "#2563EB" },
+          business:  { name: "", sidebarColor: "#0f1923", accentColor: "#2563EB" },
           products:  [], providers: [], sales: [], registers: [], cashiers: [],
           nid: { product: 1, provider: 1, sale: 1, register: 1, cashier: 1 },
           createdAt: now.toISOString(),
@@ -2004,7 +1996,7 @@ export default function App() {
       clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
         setDoc(doc(db, "users", user.uid, "data", "main"), next).catch(console.error);
-      }, 1500);
+      }, 300);
       return next;
     });
   }, [user]);
@@ -2044,7 +2036,7 @@ export default function App() {
   return (
     <>
       <GS />
-      <div style={{ display: "flex", height: "100vh", fontFamily: FONT, overflow: "hidden" }}>
+      <div style={{ display: "flex", height: "100vh", fontFamily: FONT, overflow: "hidden", width: "100%", maxWidth: "100vw" }}>
 
         {/* ── SIDEBAR ─────────────────────────────────────────────────── */}
         {/* Overlay for mobile */}
@@ -2083,7 +2075,7 @@ export default function App() {
         </div>
 
         {/* ── CONTENT ─────────────────────────────────────────────────── */}
-        <div className="flow-content" style={{ flex: 1, overflowY: "auto", backgroundColor: Z[50], position: "relative" }}>
+        <div className="flow-content" style={{ flex: 1, overflowY: "auto", overflowX: "hidden", backgroundColor: Z[50], position: "relative", minWidth: 0 }}>
           {/* Mobile header */}
           <div className="flow-hamburger" style={{ display:"none", alignItems:"center", gap:12, padding:"11px 16px", borderBottom:`1px solid ${Z[200]}`, background:"white", position:"sticky", top:0, zIndex:30 }}>
             <button onClick={() => setSideOpen(o => !o)} style={{ background:"none", border:"none", cursor:"pointer", padding:4, display:"flex", flexDirection:"column", gap:4 }}>
