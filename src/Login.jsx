@@ -31,25 +31,47 @@ Estos términos se rigen por las leyes de la República Argentina.
 vexaflowcore@gmail.com | WhatsApp: +54 344 463 5779`
 
 // ── Definidos FUERA de Login para evitar re-mount al escribir ─────────────────
+const EyeIcon = ({ show }) => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    {show
+      ? <><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></>
+      : <><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></>
+    }
+  </svg>
+)
+
 function FInput({ type, placeholder, value, onChange }) {
   const [focused, setFocused] = useState(false)
+  const [showPw, setShowPw]   = useState(false)
+  const isPw    = type === 'password'
+  const inputType = isPw ? (showPw ? 'text' : 'password') : (type || 'text')
+
   return (
-    <input
-      type={type || 'text'}
-      placeholder={placeholder}
-      value={value}
-      onChange={onChange}
-      onFocus={() => setFocused(true)}
-      onBlur={() => setFocused(false)}
-      style={{
-        fontFamily: FONT, width: '100%', padding: '10px 14px',
-        border: `1px solid ${focused ? '#2563EB' : '#E4E4E7'}`,
-        boxShadow: focused ? '0 0 0 3px #EFF6FF' : 'none',
-        borderRadius: 8, fontSize: 14, outline: 'none',
-        boxSizing: 'border-box', transition: 'border 0.15s, box-shadow 0.15s',
-        background: 'white', color: '#09090B', minHeight: 44,
-      }}
-    />
+    <div style={{ position: 'relative' }}>
+      <input
+        type={inputType}
+        placeholder={placeholder}
+        value={value}
+        onChange={onChange}
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
+        style={{
+          fontFamily: FONT, width: '100%',
+          padding: isPw ? '10px 42px 10px 14px' : '10px 14px',
+          border: `1px solid ${focused ? '#2563EB' : '#E4E4E7'}`,
+          boxShadow: focused ? '0 0 0 3px #EFF6FF' : 'none',
+          borderRadius: 8, fontSize: 14, outline: 'none',
+          boxSizing: 'border-box', transition: 'border 0.15s, box-shadow 0.15s',
+          background: 'white', color: '#09090B', minHeight: 44,
+        }}
+      />
+      {isPw && (
+        <button type="button" onClick={() => setShowPw(v => !v)}
+          style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#A1A1AA', display: 'flex', padding: 0 }}>
+          <EyeIcon show={showPw} />
+        </button>
+      )}
+    </div>
   )
 }
 
