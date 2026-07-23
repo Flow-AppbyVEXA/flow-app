@@ -416,40 +416,6 @@ function Lector({ state, setState }) {
           ✅ Venta registrada correctamente
         </div>
       )}
-
-      {tab === "proveedores" && (
-        <div>
-          <Card>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["Proveedor","Productos","Inversión en stock","Margen prom."].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
-              <tbody>
-                {state.providers.length === 0
-                  ? <tr><td colSpan={4} style={{ padding: "32px", textAlign: "center", color: Z[400], fontFamily: FONT, fontSize: 13 }}>No hay proveedores cargados aún</td></tr>
-                  : state.providers.map((prov, i) => {
-                      const prods = state.products.filter(p => p.providerId === prov.id);
-                      const inv   = prods.reduce((s, p) => s + p.cost * p.stock, 0);
-                      const margins = prods.filter(p => p.price > 0).map(p => Math.round(((p.price - p.cost) / p.price) * 100));
-                      const avgMargin = margins.length ? Math.round(margins.reduce((a, b) => a + b, 0) / margins.length) : 0;
-                      return (
-                        <tr key={prov.id} className="tr-h" style={{ background: i % 2 === 0 ? "white" : Z[50] }}>
-                          <TD><span style={{ fontWeight: 500, color: Z[950] }}>{prov.name}</span></TD>
-                          <TD><span style={{ fontFamily: MONO }}>{prods.length}</span></TD>
-                          <TD><span style={{ fontFamily: MONO }}>{fmt(inv)}</span></TD>
-                          <TD>
-                            <span style={{ fontFamily: MONO, fontWeight: 600, color: avgMargin >= 30 ? "#16A34A" : avgMargin >= 15 ? "#D97706" : Z[500] }}>
-                              {avgMargin}%
-                            </span>
-                          </TD>
-                        </tr>
-                      );
-                    })
-                }
-              </tbody>
-            </table>
-          </Card>
-        </div>
-      )}
-
     </div>
   );
 }
@@ -1289,6 +1255,35 @@ function Reportes({ state }) {
                     </TD>
                   </tr>
                 ))}
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      )}
+
+      {tab === "proveedores" && (
+        <div>
+          <Card>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr>{["Proveedor","Productos","Inversión en stock","Margen prom."].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+              <tbody>
+                {state.providers.length === 0
+                  ? <tr><td colSpan={4} style={{ padding: "32px", textAlign: "center", color: Z[400], fontFamily: FONT, fontSize: 13 }}>No hay proveedores cargados aún</td></tr>
+                  : state.providers.map((prov, i) => {
+                      const prods   = state.products.filter(p => p.providerId === prov.id);
+                      const inv     = prods.reduce((s, p) => s + p.cost * p.stock, 0);
+                      const margins = prods.filter(p => p.price > 0).map(p => Math.round(((p.price - p.cost) / p.price) * 100));
+                      const avgM    = margins.length ? Math.round(margins.reduce((a,b) => a+b,0)/margins.length) : 0;
+                      return (
+                        <tr key={prov.id} className="tr-h" style={{ background: i%2===0 ? "white" : Z[50] }}>
+                          <TD><span style={{ fontWeight: 500, color: Z[950] }}>{prov.name}</span></TD>
+                          <TD><span style={{ fontFamily: MONO }}>{prods.length}</span></TD>
+                          <TD><span style={{ fontFamily: MONO }}>{fmt(inv)}</span></TD>
+                          <TD><span style={{ fontFamily: MONO, fontWeight: 600, color: avgM>=30?"#16A34A":avgM>=15?"#D97706":Z[500] }}>{avgM}%</span></TD>
+                        </tr>
+                      );
+                    })
+                }
               </tbody>
             </table>
           </Card>
