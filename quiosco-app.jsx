@@ -244,7 +244,7 @@ const StatCard = ({ label, value, sub }) => (
 
 // Page Header
 const PH = ({ title, action }) => (
-  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
+  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 24, flexWrap: "wrap", gap: 10 }}>
     <h1 style={{ ...sx.title }}>{title}</h1>
     {action && <div style={{ display: "flex", gap: 8, alignItems: "center" }}>{action}</div>}
   </div>
@@ -286,7 +286,7 @@ function Lector({ state, setState }) {
       id: state.nid.sale, date: T, time: nowStr(),
       items: cart.map(i => ({ productId: i.productId, name: i.name, qty: i.qty, price: i.price, cost: i.cost })),
       total, cost: totalCost, benefit: total - totalCost,
-      discount: itemsDisc + totalDisc, cashierId: state.cashiers[0]?.id || 1,
+      discount: itemsDisc + totalDisc, cashierId: (() => { const r = state.registers.find(r => r.date === T && r.status === "open"); return r?.cashierId || state.cashiers[0]?.id || null; })(),
     };
     setState(prev => ({
       ...prev,
@@ -301,9 +301,31 @@ function Lector({ state, setState }) {
     setToast(true); setTimeout(() => setToast(false), 2500);
   };
 
+  const isNewUser = state.products.length === 0 && state.sales.length === 0;
+
   return (
     <div style={sx.page}>
-      <PH icon="📖" title="Lector — Punto de Venta" />
+      <PH title="Lector" />
+
+      {/* Onboarding */}
+      {isNewUser && (
+        <div style={{ background: BLUE[50], border: "1px solid #BFDBFE", borderRadius: 10, padding: "16px 20px", marginBottom: 20 }}>
+          <div style={{ fontWeight: 600, fontSize: 14, color: BLUE[600], marginBottom: 10, fontFamily: FONT }}>👋 ¡Bienvenido a Flow!</div>
+          {[
+            ["1", "Cargá tus productos", "Productos → + Cargar uno"],
+            ["2", "Abrí la caja", "Caja → ingresá el monto inicial"],
+            ["3", "¡Empezá a vender!", "Buscá productos por nombre o código de barras"],
+          ].map(([n, title, desc]) => (
+            <div key={n} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 7 }}>
+              <div style={{ width: 20, height: 20, borderRadius: "50%", background: BLUE[600], color: "white", fontSize: 11, fontWeight: 700, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>{n}</div>
+              <div style={{ fontFamily: FONT }}>
+                <span style={{ fontWeight: 600, fontSize: 13, color: Z[800] }}>{title}</span>
+                <span style={{ fontSize: 12, color: Z[500] }}> — {desc}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
 
       {/* Search */}
       <div style={{ position: "relative", marginBottom: 20 }}>
@@ -394,6 +416,40 @@ function Lector({ state, setState }) {
           ✅ Venta registrada correctamente
         </div>
       )}
+
+      {tab === "proveedores" && (
+        <div>
+          <Card>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr>{["Proveedor","Productos","Inversión en stock","Margen prom."].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+              <tbody>
+                {state.providers.length === 0
+                  ? <tr><td colSpan={4} style={{ padding: "32px", textAlign: "center", color: Z[400], fontFamily: FONT, fontSize: 13 }}>No hay proveedores cargados aún</td></tr>
+                  : state.providers.map((prov, i) => {
+                      const prods = state.products.filter(p => p.providerId === prov.id);
+                      const inv   = prods.reduce((s, p) => s + p.cost * p.stock, 0);
+                      const margins = prods.filter(p => p.price > 0).map(p => Math.round(((p.price - p.cost) / p.price) * 100));
+                      const avgMargin = margins.length ? Math.round(margins.reduce((a, b) => a + b, 0) / margins.length) : 0;
+                      return (
+                        <tr key={prov.id} className="tr-h" style={{ background: i % 2 === 0 ? "white" : Z[50] }}>
+                          <TD><span style={{ fontWeight: 500, color: Z[950] }}>{prov.name}</span></TD>
+                          <TD><span style={{ fontFamily: MONO }}>{prods.length}</span></TD>
+                          <TD><span style={{ fontFamily: MONO }}>{fmt(inv)}</span></TD>
+                          <TD>
+                            <span style={{ fontFamily: MONO, fontWeight: 600, color: avgMargin >= 30 ? "#16A34A" : avgMargin >= 15 ? "#D97706" : Z[500] }}>
+                              {avgMargin}%
+                            </span>
+                          </TD>
+                        </tr>
+                      );
+                    })
+                }
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      )}
+
     </div>
   );
 }
