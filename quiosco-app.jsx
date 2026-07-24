@@ -1549,7 +1549,36 @@ function Etiquetas({ state }) {
 // ════════════════════════════════════════════════════════════════════════════════
 // SOPORTE Y AJUSTES
 // ════════════════════════════════════════════════════════════════════════════════
-function Ajustes({ state, setState }) {
+function NameSaver({ state, setState, saveNow }) {
+  const [name, setName]     = useState(state.business.name || "");
+  const [saved, setSaved]   = useState(false);
+  const accent = state.business.accentColor;
+
+  const handleSave = () => {
+    const updated = { ...state, business: { ...state.business, name } };
+    setState(() => updated);
+    saveNow(updated);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  };
+
+  return (
+    <div style={{ display: "flex", gap: 8 }}>
+      <TInput
+        value={name}
+        onChange={e => setName(e.target.value)}
+        onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
+        placeholder="Nombre de tu negocio"
+        style={{ flex: 1 }}
+      />
+      <PBtn onClick={handleSave} accent={accent} style={{ whiteSpace: "nowrap", padding: "9px 16px" }}>
+        {saved ? "✅ Guardado" : "Guardar"}
+      </PBtn>
+    </div>
+  );
+}
+
+function Ajustes({ state, setState, saveNow }) {
   const { logout, user } = useAuth();
   const [tab, setTab]       = useState("soporte");
   const [feedback, setFb]   = useState("");
@@ -1687,7 +1716,7 @@ function Ajustes({ state, setState }) {
             <div style={{ fontWeight: 600, fontSize: 14, color: "#0F172A", marginBottom: 16 }}>Nombre del negocio</div>
             <div style={{ marginBottom: 14 }}>
               <div style={{ ...sx.label, marginBottom: 7 }}>Nombre del negocio</div>
-              <TInput value={state.business.name} onChange={e => upd("name", e.target.value)} placeholder="Nombre de tu negocio" />
+              <NameSaver state={state} setState={setState} saveNow={saveNow} />
             </div>
 
           </Card>
@@ -2052,6 +2081,10 @@ export default function App() {
     });
   }, [user]);
 
+  const saveNow = useCallback((data) => {
+    setDoc(doc(db, "users", user.uid, "data", "main"), data).catch(console.error);
+  }, [user]);
+
   const handleSubscribe = async () => {
     setSubLoading(true); setSubError("");
     try {
@@ -2141,7 +2174,7 @@ export default function App() {
             {name}
           </div>
           <div style={{ position: "relative", zIndex: 1, minHeight: "100%" }}>
-            {Section && <Section state={state} setState={setStateAndSave} />}
+            {Section && <Section state={state} setState={setStateAndSave} saveNow={saveNow} />}
           </div>
         </div>
 
