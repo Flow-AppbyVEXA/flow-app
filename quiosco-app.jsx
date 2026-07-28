@@ -29,17 +29,18 @@ const GS = () => (
       .flow-sidebar { transform: translateX(-100%); transition: transform 0.22s cubic-bezier(.4,0,.2,1); position: fixed !important; z-index: 50; height: 100vh; }
       .flow-sidebar.open { transform: translateX(0); box-shadow: 24px 0 48px rgba(0,0,0,0.25); }
       .flow-overlay { display: block !important; }
-      .flow-content { margin-left: 0 !important; width: 100% !important; }
+      .flow-content { margin-left: 0 !important; width: 100% !important; min-width: 0; overflow-x: hidden; }
       .flow-hamburger { display: flex !important; }
-      .flow-page { padding: 16px 14px !important; max-width: 100% !important; }
-      table { font-size: 12px !important; display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+      .flow-page { padding: 16px 14px !important; max-width: 100% !important; box-sizing: border-box !important; }
+      table { font-size: 12px !important; }
       td, th { padding: 8px 10px !important; white-space: nowrap; }
       .flow-grid-2 { grid-template-columns: 1fr !important; }
       .flow-grid-3 { grid-template-columns: 1fr 1fr !important; }
       input, select, textarea { font-size: 16px !important; }
+      .flow-table-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     }
     @media (max-width: 480px) {
-      .flow-page { padding: 12px 12px !important; }
+      .flow-page { padding: 12px 10px !important; }
       .flow-grid-2, .flow-grid-3 { grid-template-columns: 1fr !important; }
     }
   `}</style>
@@ -416,6 +417,40 @@ function Lector({ state, setState }) {
           ✅ Venta registrada correctamente
         </div>
       )}
+
+      {tab === "proveedores" && (
+        <div>
+          <Card>
+            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+              <thead><tr>{["Proveedor","Productos","Inversión en stock","Margen prom."].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+              <tbody>
+                {state.providers.length === 0
+                  ? <tr><td colSpan={4} style={{ padding: "32px", textAlign: "center", color: Z[400], fontFamily: FONT, fontSize: 13 }}>No hay proveedores cargados aún</td></tr>
+                  : state.providers.map((prov, i) => {
+                      const prods = state.products.filter(p => p.providerId === prov.id);
+                      const inv   = prods.reduce((s, p) => s + p.cost * p.stock, 0);
+                      const margins = prods.filter(p => p.price > 0).map(p => Math.round(((p.price - p.cost) / p.price) * 100));
+                      const avgMargin = margins.length ? Math.round(margins.reduce((a, b) => a + b, 0) / margins.length) : 0;
+                      return (
+                        <tr key={prov.id} className="tr-h" style={{ background: i % 2 === 0 ? "white" : Z[50] }}>
+                          <TD><span style={{ fontWeight: 500, color: Z[950] }}>{prov.name}</span></TD>
+                          <TD><span style={{ fontFamily: MONO }}>{prods.length}</span></TD>
+                          <TD><span style={{ fontFamily: MONO }}>{fmt(inv)}</span></TD>
+                          <TD>
+                            <span style={{ fontFamily: MONO, fontWeight: 600, color: avgMargin >= 30 ? "#16A34A" : avgMargin >= 15 ? "#D97706" : Z[500] }}>
+                              {avgMargin}%
+                            </span>
+                          </TD>
+                        </tr>
+                      );
+                    })
+                }
+              </tbody>
+            </table>
+          </Card>
+        </div>
+      )}
+
     </div>
   );
 }
@@ -1141,7 +1176,7 @@ function Reportes({ state }) {
   const rotLabel = { "7": "Últimos 7 días", "15": "Últimos 15 días", "30": "Últimos 30 días", "mes": "Mes actual", "año": "Año actual", "custom": "Personalizado" }[rotPeriod] || "30 días";
   const maxQty = rotData[0]?.qty || 1;
 
-  const TABS = [{ id: "ventas", l: "Ventas" }, { id: "stock", l: "Stock" }, { id: "rotacion", l: "Rotación" }];
+  const TABS = [{ id: "ventas", l: "Ventas" }, { id: "stock", l: "Stock" }, { id: "rotacion", l: "Rotación" }, { id: "proveedores", l: "Proveedores" }];
 
   return (
     <div style={sx.page}>
@@ -1257,29 +1292,26 @@ function Reportes({ state }) {
                 ))}
               </tbody>
             </table>
-          </Card>
-        </div>
-      )}
-
+ 
       {tab === "proveedores" && (
         <div>
           <Card>
             <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["Proveedor","Productos","Inversión en stock","Margen prom."].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
+              <thead><tr>{["Proveedor","Productos","Inversión","Margen"].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
               <tbody>
                 {state.providers.length === 0
-                  ? <tr><td colSpan={4} style={{ padding: "32px", textAlign: "center", color: Z[400], fontFamily: FONT, fontSize: 13 }}>No hay proveedores cargados aún</td></tr>
+                  ? <tr><td colSpan={4} style={{ padding: "32px", textAlign: "center", color: Z[400], fontFamily: FONT, fontSize: 13 }}>Sin proveedores</td></tr>
                   : state.providers.map((prov, i) => {
-                      const prods   = state.products.filter(p => p.providerId === prov.id);
-                      const inv     = prods.reduce((s, p) => s + p.cost * p.stock, 0);
-                      const margins = prods.filter(p => p.price > 0).map(p => Math.round(((p.price - p.cost) / p.price) * 100));
-                      const avgM    = margins.length ? Math.round(margins.reduce((a,b) => a+b,0)/margins.length) : 0;
+                      const prods = state.products.filter(p => p.providerId === prov.id);
+                      const inv = prods.reduce((s, p) => s + p.cost * p.stock, 0);
+                      const margins = prods.filter(p => p.price > 0).map(p => Math.round(((p.price-p.cost)/p.price)*100));
+                      const avgM = margins.length ? Math.round(margins.reduce((a,b)=>a+b,0)/margins.length) : 0;
                       return (
-                        <tr key={prov.id} className="tr-h" style={{ background: i%2===0 ? "white" : Z[50] }}>
-                          <TD><span style={{ fontWeight: 500, color: Z[950] }}>{prov.name}</span></TD>
-                          <TD><span style={{ fontFamily: MONO }}>{prods.length}</span></TD>
-                          <TD><span style={{ fontFamily: MONO }}>{fmt(inv)}</span></TD>
-                          <TD><span style={{ fontFamily: MONO, fontWeight: 600, color: avgM>=30?"#16A34A":avgM>=15?"#D97706":Z[500] }}>{avgM}%</span></TD>
+                        <tr key={prov.id} className="tr-h" style={{ background: i%2===0?"white":Z[50] }}>
+                          <TD><span style={{ fontWeight:500, color:Z[950] }}>{prov.name}</span></TD>
+                          <TD><span style={{ fontFamily:MONO }}>{prods.length}</span></TD>
+                          <TD><span style={{ fontFamily:MONO }}>{fmt(inv)}</span></TD>
+                          <TD><span style={{ fontFamily:MONO, fontWeight:600, color:avgM>=30?"#16A34A":avgM>=15?"#D97706":Z[500] }}>{avgM}%</span></TD>
                         </tr>
                       );
                     })
@@ -1287,6 +1319,9 @@ function Reportes({ state }) {
               </tbody>
             </table>
           </Card>
+        </div>
+      )}
+         </Card>
         </div>
       )}
     </div>
@@ -1550,10 +1585,9 @@ function Etiquetas({ state }) {
 // SOPORTE Y AJUSTES
 // ════════════════════════════════════════════════════════════════════════════════
 function NameSaver({ state, setState, saveNow }) {
-  const [name, setName]     = useState(state.business.name || "");
-  const [saved, setSaved]   = useState(false);
+  const [name, setName] = useState(state.business.name || "");
+  const [saved, setSaved] = useState(false);
   const accent = state.business.accentColor;
-
   const handleSave = () => {
     const updated = { ...state, business: { ...state.business, name } };
     setState(() => updated);
@@ -1561,19 +1595,10 @@ function NameSaver({ state, setState, saveNow }) {
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
   };
-
   return (
     <div style={{ display: "flex", gap: 8 }}>
-      <TInput
-        value={name}
-        onChange={e => setName(e.target.value)}
-        onKeyDown={e => { if (e.key === "Enter") handleSave(); }}
-        placeholder="Nombre de tu negocio"
-        style={{ flex: 1 }}
-      />
-      <PBtn onClick={handleSave} accent={accent} style={{ whiteSpace: "nowrap", padding: "9px 16px" }}>
-        {saved ? "✅ Guardado" : "Guardar"}
-      </PBtn>
+      <TInput value={name} onChange={e => setName(e.target.value)} onKeyDown={e => { if (e.key === "Enter") handleSave(); }} placeholder="Nombre de tu negocio" style={{ flex: 1 }} />
+      <PBtn onClick={handleSave} accent={accent} style={{ whiteSpace: "nowrap" }}>{saved ? "✅ Guardado" : "Guardar"}</PBtn>
     </div>
   );
 }
