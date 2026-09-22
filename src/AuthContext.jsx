@@ -14,18 +14,11 @@ export function useAuth() { return useContext(AuthContext) }
 
 function makeInitData(businessName) {
   const now = new Date()
-  const trialEnds = new Date(now)
-  trialEnds.setDate(trialEnds.getDate() + 30)
   return {
     business: { name: businessName, sidebarColor: '#0f1923', accentColor: '#2563EB' },
     products: [], providers: [], sales: [], registers: [], cashiers: [],
     nid: { product: 1, provider: 1, sale: 1, register: 1, cashier: 1 },
     createdAt: now.toISOString(),
-    billing: {
-      status: 'trial', trialEndsAt: trialEnds.toISOString(),
-      subscriptionId: null, amount: null, nextPaymentDate: null,
-      firstChargeDate: null, priceEscalated: false,
-    },
   }
 }
 
