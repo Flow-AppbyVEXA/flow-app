@@ -1609,44 +1609,8 @@ function Ajustes({ state, setState, saveNow }) {
   const [feedback, setFb]   = useState("");
   const [sent, setSent]     = useState(false);
   const [logoutM, setLogM]  = useState(false);
-  const [cancelM, setCanM]  = useState(false);
-  const [subLoading, setSubLoading] = useState(false);
-  const [cancelLoading, setCancelLoading] = useState(false);
   const accent = state.business.accentColor;
-  const billing = state.billing || {};
   const logoRef = useRef(null);
-
-  const handleSubscribe = async () => {
-    setSubLoading(true);
-    try {
-      const res = await fetch("/api/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email, uid: user.uid }),
-      });
-      const data = await res.json();
-      if (data.init_point) window.location.href = data.init_point;
-    } catch (e) { console.error(e); }
-    setSubLoading(false);
-  };
-
-  const handleCancelSubscription = async () => {
-    setCancelLoading(true);
-    try {
-      const res = await fetch("/api/cancel-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ subscriptionId: billing.subscriptionId }),
-      });
-      const data = await res.json();
-      if (data.ok) {
-        setState(p => ({ ...p, billing: { ...p.billing, status: "cancelled" } }));
-      }
-    } catch (e) { console.error(e); }
-    setCancelLoading(false);
-    setCanM(false);
-  };
-
   const upd = (f, v) => setState(p => ({ ...p, business: { ...p.business, [f]: v } }));
 
   const handleLogo = e => {
@@ -1712,29 +1676,10 @@ function Ajustes({ state, setState, saveNow }) {
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <Card style={{ padding: 22 }}>
             <div style={{ fontWeight: 600, fontSize: 14, color: "#0F172A", marginBottom: 14 }}>Información de cuenta</div>
-            {[["Email", user?.email || "—"],["Método de pago","💳 Tarjeta"]].map(([l, v]) => (
-              <div key={l} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #F9FAFB" }}>
-                <span style={{ fontSize: 13, color: "#6B7280" }}>{l}</span>
-                <span style={{ fontSize: 13, fontWeight: 500, color: "#0F172A" }}>{v}</span>
-              </div>
-            ))}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0", borderBottom: "1px solid #F9FAFB" }}>
-              <span style={{ fontSize: 13, color: "#6B7280" }}>Suscripción</span>
-              {billing.status === "authorized" && <Badge color="green">Activa · {fmt(billing.amount || 7500)}/mes</Badge>}
-              {billing.status === "trial" && <Badge color="blue">Prueba gratuita</Badge>}
-              {billing.status === "paused" && <Badge color="yellow">Pausada</Badge>}
-              {billing.status === "cancelled" && <Badge color="red">Cancelada</Badge>}
-              {billing.status === "pending" && <Badge color="gray">Pendiente de pago</Badge>}
-              {!billing.status && <Badge color="gray">—</Badge>}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "9px 0" }}>
+              <span style={{ fontSize: 13, color: "#6B7280" }}>Email</span>
+              <span style={{ fontSize: 13, fontWeight: 500, color: "#0F172A" }}>{user?.email || "—"}</span>
             </div>
-            {(billing.status === "trial" || billing.status === "cancelled" || !billing.status) && (
-              <PBtn accent={accent} onClick={handleSubscribe} style={{ width: "100%", marginTop: 12 }}>
-                {subLoading ? "Generando link..." : "Suscribirme ahora"}
-              </PBtn>
-            )}
-            {(billing.status === "authorized" || billing.status === "pending" || billing.status === "paused") && (
-              <button onClick={() => setCanM(true)} style={{ fontSize: 12, color: "#EF4444", background: "none", border: "none", cursor: "pointer", fontFamily: FONT, marginTop: 10 }}>Cancelar suscripción</button>
-            )}
           </Card>
 
           <Card style={{ padding: 22 }}>
@@ -1790,19 +1735,6 @@ function Ajustes({ state, setState, saveNow }) {
         </Overlay>
       )}
 
-      {cancelM && (
-        <Overlay onClose={() => setCanM(false)}>
-          <div style={{ padding: 40, textAlign: "center" }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
-            <div style={{ fontWeight: 700, fontSize: 17, color: "#0F172A", marginBottom: 6, fontFamily: FONT }}>¿Cancelar suscripción?</div>
-            <div style={{ fontSize: 13, color: "#9CA3AF", marginBottom: 26, fontFamily: FONT }}>Perderás el acceso al terminar tu período actual.</div>
-            <div style={{ display: "flex", gap: 10 }}>
-              <SBtn onClick={() => setCanM(false)} style={{ flex: 1 }}>Volver</SBtn>
-              <button onClick={handleCancelSubscription} disabled={cancelLoading} style={{ flex: 1, fontFamily: FONT, fontWeight: 700, fontSize: 13, background: "#EF4444", color: "white", border: "none", cursor: cancelLoading ? "not-allowed" : "pointer", borderRadius: 10, padding: "11px", opacity: cancelLoading ? 0.7 : 1 }}>{cancelLoading ? "Cancelando..." : "Cancelar"}</button>
-            </div>
-          </div>
-        </Overlay>
-      )}
     </div>
   );
 }
@@ -1827,247 +1759,13 @@ function LoadingScreen() {
   );
 }
 
-function AdminPanel({ state }) {
-  const { user } = useAuth();
-  const [clients, setClients]   = useState(null);
-  const [loading, setLoading]   = useState(true);
-  const [error, setError]       = useState("");
-  const [selected, setSelected] = useState(null);
-  const [sortBy, setSortBy]     = useState("createdAt");
-  const accent = state.business.accentColor;
-
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const token = await user.getIdToken(true);
-        const res = await fetch("/api/admin-stats", {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || "Error al cargar datos");
-        setClients(data.clients);
-      } catch (err) { setError(err.message); }
-      setLoading(false);
-    };
-    load();
-  }, [user]);
-
-  const STATUS = {
-    trial:          { label: "Prueba",          color: "blue"   },
-    authorized:     { label: "Activa",           color: "green"  },
-    pending:        { label: "Pendiente",        color: "yellow" },
-    paused:         { label: "Pausada",          color: "yellow" },
-    cancelled:      { label: "Cancelada",        color: "red"    },
-    trial_expired:  { label: "Prueba vencida",   color: "gray"   },
-  };
-
-  if (loading) return (
-    <div style={sx.page}>
-      <PH title="Panel de Admin" />
-      <div style={{ textAlign: "center", padding: "60px", color: "#9CA3AF", fontFamily: FONT }}>Cargando datos de clientes...</div>
-    </div>
-  );
-
-  if (error) return (
-    <div style={sx.page}>
-      <PH title="Panel de Admin" />
-      <Card style={{ padding: 20 }}>
-        <div style={{ color: "#DC2626", fontSize: 13, fontFamily: FONT }}>❌ {error}</div>
-        <div style={{ fontSize: 11, color: "#9CA3AF", marginTop: 8 }}>Verificá que las variables ADMIN_EMAIL y FIREBASE_SERVICE_ACCOUNT estén configuradas en Vercel.</div>
-      </Card>
-    </div>
-  );
-
-  const statusCounts = (clients || []).reduce((acc, c) => {
-    const s = c.billing?.status || "trial";
-    acc[s] = (acc[s] || 0) + 1;
-    return acc;
-  }, {});
-
-  const mrr = (clients || [])
-    .filter(c => c.billing?.status === "authorized")
-    .reduce((sum, c) => sum + (c.billing?.amount || 7500), 0);
-
-  const sorted = [...(clients || [])].sort((a, b) => {
-    if (sortBy === "revenue")  return (b.totalRevenue || 0) - (a.totalRevenue || 0);
-    if (sortBy === "sales")    return (b.salesCount || 0) - (a.salesCount || 0);
-    if (sortBy === "products") return (b.productsCount || 0) - (a.productsCount || 0);
-    return (b.createdAt || "").localeCompare(a.createdAt || "");
-  });
-
-  if (selected) {
-    const cl = selected;
-    const st = STATUS[cl.billing?.status] || STATUS.trial;
-    const trialEnd = cl.billing?.trialEndsAt ? new Date(cl.billing.trialEndsAt).toLocaleDateString("es-AR") : "—";
-    return (
-      <div style={sx.page}>
-        <GBtn accent={accent} onClick={() => setSelected(null)}>← Volver</GBtn>
-        <div style={{ marginTop: 22 }}>
-          <Card style={{ padding: "22px 26px", marginBottom: 14 }}>
-            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
-              <div>
-                <div style={{ fontWeight: 800, fontSize: 18, color: "#0F172A", marginBottom: 3 }}>{cl.businessName}</div>
-                <div style={{ fontSize: 13, color: "#9CA3AF" }}>{cl.email}</div>
-              </div>
-              <Badge color={st.color}>{st.label}</Badge>
-            </div>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              {cl.billing?.amount && <Badge color="gray">{fmt(cl.billing.amount)}/mes</Badge>}
-              {cl.billing?.trialEndsAt && <Badge color="blue">Trial hasta {trialEnd}</Badge>}
-              {cl.billing?.nextPaymentDate && <Badge color="gray">Próximo cobro: {new Date(cl.billing.nextPaymentDate).toLocaleDateString("es-AR")}</Badge>}
-            </div>
-          </Card>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 11 }}>
-            <StatCard label="Productos cargados" value={cl.productsCount + ""} />
-            <StatCard label="Ventas registradas" value={cl.salesCount + ""} />
-            <StatCard label="Total facturado" value={fmt(cl.totalRevenue)} sub="en su quiosco" />
-            <StatCard label="Se registró" value={cl.createdAt ? cl.createdAt.slice(0, 10) : "—"} />
-            <StatCard label="Última venta" value={cl.lastSaleDate || "Sin ventas"} />
-            <StatCard label="Estado MP" value={cl.billing?.status || "—"} />
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div style={sx.page}>
-      <PH title="Panel de Admin" />
-
-      {/* KPIs */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 11, marginBottom: 22 }}>
-        <StatCard label="Total clientes"  value={(clients?.length || 0) + ""} />
-        <StatCard label="Activos"         value={(statusCounts.authorized || 0) + ""} sub="suscripción paga" />
-        <StatCard label="MRR"             value={fmt(mrr)} sub="mensual recurrente" />
-        <StatCard label="En prueba"       value={(statusCounts.trial || 0) + ""} />
-        <StatCard label="Cancelados"      value={(statusCounts.cancelled || 0) + ""} />
-        <StatCard label="Prueba vencida"  value={(statusCounts.trial_expired || 0) + ""} />
-      </div>
-
-      {/* Sort */}
-      <div style={{ display: "flex", gap: 7, marginBottom: 13, flexWrap: "wrap", alignItems: "center" }}>
-        <span style={{ fontSize: 11, fontWeight: 600, color: "#9CA3AF" }}>Ordenar:</span>
-        {[["createdAt","Registro"],["revenue","Facturación"],["sales","Ventas"],["products","Productos"]].map(([k, l]) => (
-          <button key={k} onClick={() => setSortBy(k)}
-            style={{ fontFamily: FONT, fontSize: 12, fontWeight: sortBy === k ? 600 : 400, padding: "4px 11px", borderRadius: 8, border: `1.5px solid ${sortBy === k ? accent : "#E5E7EB"}`, background: sortBy === k ? accent : "white", color: sortBy === k ? "white" : "#6B7280", cursor: "pointer" }}>
-            {l}
-          </button>
-        ))}
-      </div>
-
-      {/* Table */}
-      <Card>
-        {sorted.length === 0
-          ? <div style={{ padding: "40px", textAlign: "center", color: "#9CA3AF", fontFamily: FONT, fontSize: 13 }}>No hay clientes todavía</div>
-          : (
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
-              <thead><tr>{["Negocio / Email","Estado","Productos","Ventas","Facturado",""].map(h => <TH key={h}>{h}</TH>)}</tr></thead>
-              <tbody>
-                {sorted.map((cl, i) => {
-                  const st = STATUS[cl.billing?.status] || STATUS.trial;
-                  return (
-                    <tr key={cl.uid} className="tr-h" style={{ background: i % 2 === 0 ? "white" : "#FAFAFA" }}>
-                      <TD>
-                        <div style={{ fontWeight: 500, color: "#0F172A", fontSize: 13 }}>{cl.businessName}</div>
-                        <div style={{ fontSize: 11, color: "#9CA3AF" }}>{cl.email}</div>
-                      </TD>
-                      <TD><Badge color={st.color}>{st.label}</Badge></TD>
-                      <TD><span style={{ fontFamily: MONO }}>{cl.productsCount}</span></TD>
-                      <TD><span style={{ fontFamily: MONO }}>{cl.salesCount}</span></TD>
-                      <TD><span style={{ fontFamily: MONO }}>{fmt(cl.totalRevenue)}</span></TD>
-                      <TD><GBtn accent={accent} onClick={() => setSelected(cl)}>Ver →</GBtn></TD>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          )
-        }
-      </Card>
-    </div>
-  );
-}
-
-function getAccessStatus(state) {
-  const billing = state.billing || {};
-  if (billing.status === "authorized") return { allowed: true, status: "authorized" };
-  if (billing.status === "paused")     return { allowed: false, status: "paused" };
-  if (billing.status === "cancelled")  return { allowed: false, status: "cancelled" };
-
-  const trialEnd = billing.trialEndsAt ? new Date(billing.trialEndsAt) : null;
-  if (trialEnd && new Date() < trialEnd) {
-    const daysLeft = Math.max(0, Math.ceil((trialEnd - new Date()) / 86400000));
-    return { allowed: true, status: "trial", daysLeft };
-  }
-  return { allowed: false, status: "trial_expired" };
-}
-
-function Paywall({ accent, status, onSubscribe, loading, error, onLogout }) {
-  const titles = {
-    trial_expired: "Tu período de prueba terminó",
-    paused: "Tu suscripción está pausada",
-    cancelled: "Tu suscripción fue cancelada",
-  };
-  const features = ["Punto de venta con lector de código", "Control de stock en tiempo real", "Caja diaria con métricas", "Reportes de rentabilidad y rotación", "Alertas de vencimiento automáticas", "Importación y exportación Excel"];
-  return (
-    <div style={{ minHeight: "100vh", display: "flex", background: Z[50], fontFamily: FONT }}>
-      <div style={{ flex: 1, display: "none" }} />
-      <div style={{ width: "100%", maxWidth: 420, margin: "auto", padding: "40px 24px" }}>
-        <div style={{ textAlign: "center", marginBottom: 28 }}>
-          <div style={{ fontSize: 22, fontWeight: 700, color: Z[950], letterSpacing: -0.4, marginBottom: 6 }}>Flow</div>
-          <div style={{ fontSize: 14, color: Z[500] }}>{titles[status] || "Activá tu suscripción para continuar"}</div>
-        </div>
-        <div style={{ background: "white", borderRadius: 12, border: `1px solid ${Z[200]}`, overflow: "hidden" }}>
-          <div style={{ padding: "24px 24px 20px", borderBottom: `1px solid ${Z[100]}` }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-              <div>
-                <div style={{ fontSize: 14, fontWeight: 600, color: Z[950] }}>Flow Pro</div>
-                <div style={{ fontSize: 11, color: Z[400], marginTop: 2 }}>Precio promocional · primeros 6 meses</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <span style={{ fontFamily: MONO, fontSize: 26, fontWeight: 700, color: Z[950], letterSpacing: -0.5 }}>$7.500</span>
-                <span style={{ fontSize: 11, color: Z[500] }}>/mes</span>
-              </div>
-            </div>
-          </div>
-          <div style={{ padding: "18px 24px" }}>
-            {features.map(f => (
-              <div key={f} style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 10 }}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#16A34A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                <span style={{ fontSize: 13, color: Z[600] }}>{f}</span>
-              </div>
-            ))}
-            <button onClick={onSubscribe} disabled={loading}
-              style={{ width: "100%", marginTop: 20, padding: "11px", background: loading ? "#93C5FD" : BLUE[600], color: "white", border: "none", borderRadius: 8, fontFamily: FONT, fontWeight: 500, fontSize: 13, cursor: loading ? "not-allowed" : "pointer", letterSpacing: -0.1 }}>
-              {loading ? "Generando link..." : "Suscribirme ahora →"}
-            </button>
-            {error && <div style={{ marginTop: 10, fontSize: 12, color: "#DC2626", textAlign: "center" }}>{error}</div>}
-          </div>
-        </div>
-        <div style={{ textAlign: "center", fontSize: 11, color: Z[400], marginTop: 14 }}>
-          Luego de 6 meses, $15.000/mes · Cancelá cuando quieras
-        </div>
-        <div style={{ textAlign: "center", marginTop: 20 }}>
-          <button onClick={onLogout} style={{ background: "none", border: "none", cursor: "pointer", fontFamily: FONT, fontSize: 12, color: Z[400], textDecoration: "underline", padding: 0 }}>
-            Cerrar sesión / Cambiar cuenta
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 
 export default function App() {
   const { user, logout } = useAuth();
-  const ADMIN_EMAIL_CHECK = import.meta.env.VITE_ADMIN_EMAIL || "vexaflowcore@gmail.com";
-  const isAdmin = user?.email === ADMIN_EMAIL_CHECK;
   const [sideOpen, setSideOpen] = useState(false);
   const [state, setState]         = useState(null);
   const [active, setActive]       = useState("lector");
   const [appLoading, setAppLoading] = useState(true);
-  const [subLoading, setSubLoading] = useState(false);
-  const [subError, setSubError]     = useState("");
   const saveTimer                 = useRef(null);
 
   useEffect(() => {
@@ -2079,14 +1777,11 @@ export default function App() {
       } else {
         // Usuario nuevo — creamos el documento en Firestore con datos vacíos
         const now = new Date();
-        const trialEnds = new Date(now);
-        trialEnds.setDate(trialEnds.getDate() + 30);
         const emptyData = {
           business:  { name: "", sidebarColor: "#0f1923", accentColor: "#2563EB" },
           products:  [], providers: [], sales: [], registers: [], cashiers: [],
           nid: { product: 1, provider: 1, sale: 1, register: 1, cashier: 1 },
           createdAt: now.toISOString(),
-          billing: { status: "trial", trialEndsAt: trialEnds.toISOString(), subscriptionId: null, amount: null, nextPaymentDate: null, firstChargeDate: null, priceEscalated: false },
         };
         setDoc(docRef, emptyData).catch(console.error);
         setState(emptyData);
@@ -2110,37 +1805,11 @@ export default function App() {
     setDoc(doc(db, "users", user.uid, "data", "main"), data).catch(console.error);
   }, [user]);
 
-  const handleSubscribe = async () => {
-    setSubLoading(true); setSubError("");
-    try {
-      const res = await fetch("/api/create-subscription", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: user.email, uid: user.uid }),
-      });
-      const data = await res.json();
-      if (data.init_point) {
-        window.location.href = data.init_point;
-      } else {
-        setSubError(data.error || "No se pudo generar el link de pago.");
-      }
-    } catch (e) {
-      setSubError("Error de conexión. Probá de nuevo.");
-    }
-    setSubLoading(false);
-  };
-
   if (appLoading || !state) return <LoadingScreen />;
-
-  const access = getAccessStatus(state);
-  if (!access.allowed && !isAdmin) {
-    return <Paywall accent={state.business?.accentColor} status={access.status} onSubscribe={handleSubscribe} loading={subLoading} error={subError} onLogout={logout} />;
-  }
 
   const { sidebarColor, accentColor, name } = state.business;
   const baseMap = { lector: Lector, caja: Caja, productos: Productos, proveedores: Proveedores, vencimientos: Vencimientos, reportes: Reportes, cajeros: Cajeros, etiquetas: Etiquetas, ajustes: Ajustes };
-  const map = isAdmin ? { ...baseMap, admin: AdminPanel } : baseMap;
-  const Section = map[active];
+  const Section = baseMap[active];
 
   return (
     <>
@@ -2162,7 +1831,7 @@ export default function App() {
 
           {/* Nav */}
           <nav style={{ flex: 1, padding: "6px 8px", overflowY: "auto" }}>
-            {(isAdmin ? [...NAVS, { id: "admin", label: "Admin" }] : NAVS).map(n => {
+            {NAVS.map(n => {
               const on = active === n.id;
               return (
                 <button key={n.id} onClick={() => { setActive(n.id); setSideOpen(false); }}
